@@ -40,11 +40,12 @@ since: 2016
 ## https://github.com/hexojs/hexo-generator-feed
 
 subnav:
-  Email: "mailto:122565648@qq.com"
-  GitHub: "https://github.com/xch168"
   新浪微博: "http://weibo.com/u/1660712952"
+  GitHub: "https://github.com/xch168"
+  StackOverflow: "http://stackoverflow.com/users/6187166/xucanhui"
+  Email: "mailto:122565648@qq.com"
   #V2EX: "#"
-  RSS: "/atom.xml"
+  #RSS: "/atom.xml"
   #知乎: "zhihu"
   #豆瓣: "douban"
   #简书: "jianshu"
@@ -60,7 +61,6 @@ subnav:
   #QQ: "#"
   #微信: "Wechat"
   #PayPal: "#"
-  #StackOverflow: "#"
   #CodePen: ""
   #Plunker: ""
   #Instagram: "#"
@@ -172,7 +172,7 @@ friends:
 #friends: false
 
 #是否开启“关于我”。
-aboutme: 专注于前端
+aboutme: Android攻城狮
 #aboutme: false
 
 # 是否在新窗口打开链接
