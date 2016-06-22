@@ -5,7 +5,7 @@ date: 2016-06-16 00:20:00
 
 ### 个人简介
 
-![徐灿辉](img/avatar.jpg)
+![徐灿辉](../img/avatar.jpg)
 
 - 姓名：徐灿辉
 - 职业：Android开发工程师
