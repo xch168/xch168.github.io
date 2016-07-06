@@ -197,7 +197,7 @@ ie_updater:
 ## Insatall below plugin to take effect | 使用搜索需先安装对应插件
 ## https://github.com/PaicHyperionDev/hexo-generator-search
 search: 
-  #on: true
+  on: true
   onload: true
   ## true: get search.xml file when the page has loaded
   ## false: get the file when search box gets focus
