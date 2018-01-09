@@ -6,15 +6,17 @@ tags: Android
 
 1、精通Java、Kotlin，熟悉Java虚拟机工作原理；
 
-3、熟悉面向对象设计和分析，能够运用常用的设计模式；
+2、熟悉面向对象设计和分析，能够运用常用的设计模式；
 
-4、扎实的数据结构、算法基础；
+<!-- more -->
 
-5、熟悉网络编程、多线程，熟悉TCP/IP、HTTP/HTTPS等协议；
+3、扎实的数据结构、算法基础；
 
-6、熟练使用Android SDK，深入理解Android系统原理和Framework层原理；
+4、熟悉网络编程、多线程，熟悉TCP/IP、HTTP/HTTPS等协议；
 
-7、对Android系统应用管理、进程管理、内存管理机制有深入理解；
+5、熟练使用Android SDK，深入理解Android系统原理和Framework层原理；
+
+6、对Android系统应用管理、进程管理、内存管理机制有深入理解；
 
 7、精通Android上开发、调试、编译、打包等流程；
 
