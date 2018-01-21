@@ -29,7 +29,7 @@ adb kill-server
 adb devices 
 ```
 
-###安装APK
+### 安装APK
 
 ```shell
 adb install <path_to_apk>
@@ -73,8 +73,7 @@ adb shell dumpsys activity|grep "mFocusedActivity"
 ```shell
 adb shell pm clear <packageName>
 ```
-
-
+------
 
 #### 参考
 
