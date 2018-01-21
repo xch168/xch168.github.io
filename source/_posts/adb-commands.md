@@ -73,6 +73,8 @@ adb shell dumpsys activity|grep "mFocusedActivity"
 ```shell
 adb shell pm clear <packageName>
 ```
+---
+
 ### 参考
 
 1、[Android Debug Bridge (adb)](https://developer.android.google.cn/studio/command-line/adb.html?hl=zh-cn)
