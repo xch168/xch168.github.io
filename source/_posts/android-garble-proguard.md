@@ -145,9 +145,9 @@ buildTypes {
 | **        | 匹配任意长度字符，包括分隔符"."。如使用com.github.**,匹配包下的所有内容，可以匹配到com.github.xch168.User。 |
 | ***       | 匹配任意参数类型。例如`*** getName(***)` 可匹配String getName(String) |
 | ...       | 匹配任意长度的任意类型参数。例如void setName(…) 可以匹配void setName(String firstName, String secondName) |
-| <fileds>  | 匹配类、接口中所有字段                                       |
-| <methods> | 匹配类、接口中所有方法                                       |
-| <init>    | 匹配类中所有构造函数                                         |
+| `<fileds>`  | 匹配类、接口中所有字段                                       |
+| `<methods>` | 匹配类、接口中所有方法                                       |
+| `<init>`    | 匹配类中所有构造函数                                         |
 
 ### 四、配置自己的混淆
 
