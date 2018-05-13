@@ -299,3 +299,7 @@ android {
 
 混淆后可以减小APK的大小，可以提高被反编译的难度，但是混淆后需要进行系统全面的测试。
 
+### 参考链接
+
+1. [压缩代码和资源](https://developer.android.com/studio/build/shrink-code?hl=zh-cn )
+2. [Android 混淆查缺补漏](https://mp.weixin.qq.com/s?__biz=MzAxMTI4MTkwNQ==&mid=2650824879&idx=1&sn=f7d6830cb10046ff61bb461a15353e34&chksm=80b7b431b7c03d271d1d836b586a29f813d738d9b7774075f8b50e7ab0215052c3e075ab71c4&scene=38#wechat_redirect)
