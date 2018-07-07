@@ -8,6 +8,8 @@ tags: [Android, NDK]
 
 > 在Android Studio 2.2及更高的版本，可以使用`CMake`将C/C++代码编译到一个native library（即.so文件），然后打包到APK中。
 
+<!--more-->
+
 ### 在Gradle中配置CMake变量
 
 ```groovy
