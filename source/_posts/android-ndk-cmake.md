@@ -151,11 +151,13 @@ include_directories( imported-lib/include/ )
 
 如果要显示执行构建过程中的详细信息，比如为了得到更详细的出错信息。
 
+运行后在`.externalNativeBuild/cmake/debug/{abi}/cmake_build_output.txt`查看log
+
 ```groovy
 # 开启输出详细的编译和链接信息
 set(CMAKE_VERBOSE_MAKEFILE on)
 
-message("要打印的信息")
+message(STATUS "要打印的信息")
 ```
 
 自定义变量
