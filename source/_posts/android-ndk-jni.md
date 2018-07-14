@@ -155,7 +155,7 @@ public native int addNum();
 
 @Override
 protected void onCreate(Bundle savedInstanceState) {
-	super.onCreate(savedInstanceState);
+    super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
     Log.i(TAG, "调用前：num=" + num);
@@ -198,12 +198,12 @@ public native void accessStaticField();
 
 @Override
 protected void onCreate(Bundle savedInstanceState) {
-	super.onCreate(savedInstanceState);
-	setContentView(R.layout.activity_main);
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
 
-	Log.i(TAG, "调用前：name=" + name);
-	accessStaticField();
-	Log.i(TAG, "调用后：" + name);
+    Log.i(TAG, "调用前：name=" + name);
+    accessStaticField();
+    Log.i(TAG, "调用后：" + name);
 }
 ```
 
@@ -217,12 +217,12 @@ Java_com_github_xch168_ndkdemo_MainActivity_accessStaticField(JNIEnv *env, jobje
     jfieldID fid = env->GetStaticFieldID(jclazz, "name", "Ljava/lang/String;");
     jstring name = (jstring)(env->GetStaticObjectField(jclazz, fid));
     const char *str = env->GetStringUTFChars(name, JNI_FALSE);
-	/*
-	 * 不要用 == 比较字符串
+    /*
+     * 不要用 == 比较字符串
      *  name == (jstring)"Tom"
-	 * 或用 = 直接赋值
-	 * name = (jstring)"Jerry"
-	 */
+     * 或用 = 直接赋值
+     * name = (jstring)"Jerry"
+     */
     char ch[30] = "hello, ";
     strcat(ch, str);
     jstring new_str = env->NewStringUTF(ch);
@@ -237,29 +237,343 @@ MainActivity: 调用前：name=Tom
 MainActivity: 调用后：hello, Tom
 ```
 
-#### 访问private变量
+**注意**：获取Java静态变量，都是调用JNI相应静态函数，不能调用非静态的，同时留意传入的参数是`jclass`，而不是jobject。
 
+#### 访问private变量，并对其修改
 
+Java层：native方法定义和调用
 
+```java
+private int age = 25;
 
+public native void accessPrivateField();
+
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    Log.i(TAG, "调用前：age=" + age);
+    accessPrivateField();
+    Log.i(TAG, "调用后：age" + age);
+}
+```
+
+C++层：
+
+```c++
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_github_xch168_ndkdemo_MainActivity_accessPrivateField(JNIEnv *env, jobject instance) {
+    jclass clazz = env->GetObjectClass(instance);
+    jfieldID fid = env->GetFieldID(clazz, "age", "I");
+    jint age = env->GetIntField(instance, fid);
+    age++;
+    env->SetIntField(instance, fid, age);
+}
+```
+
+输出结果：
+
+```java
+MainActivity: 调用前：age=25
+MainActivity: 调用后：age=26
+```
 
 ### JNI函数调用Java对象的方法
 
+步骤：
+
+1. 通过`env->GetObjectClass(jobject)`获取Java对象的class类，返回一个jclass；
+
+2. 通过`env->GetMethodID(jclass, methodName, sign)`获取到Java对象的方法id，即jmethodID，当获取的方法是static时，使用`GetStaticMethodID`；
+
+3. 通过JNI函数`env->Call{type}Method(jobject, jmethod, param...)`实现调用Java的方法；
+
+   若调用的是static方法，则使用`CallStatic{type}Method(jclass, jmethod, param...)`，使用的是jclass。
+
+------
+
 #### 调用Java公有方法
 
+Java层：native方法定义和调用
 
+```java
+private String name = "Tom";
+
+private void setName(String name) {
+    this.name = name;
+}
+
+public native void invokePublicMethod();
+
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    Log.i(TAG, "调用前：name=" + name);
+    accessPublicMethod();
+    Log.i(TAG, "调用后：name=" + name);
+}
+```
+
+C++层：
+
+```c++
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_github_xch168_ndkdemo_MainActivity_invokePublicMethod(JNIEnv *env, jobject instance) {
+    // 1.获取对应的 class
+    jclass jclazz = env->GetObjectClass(instance);
+    // 2.获取方法的id
+    jmethodID mid = env->GetMethodID(jclazz, "setName", "(Ljava/lang/String;)V");
+    // 3.字符数组转换为字符串
+    char c[10] = "Jerry";
+    jstring jName = env->NewStringUTF(c);
+    // 4.通过该jobject调用对应的方法
+    env->CallVoidMethod(instance, mid, jName);
+}
+```
+
+输出结果：
+
+```java
+MainActivity: 调用前：name=Tom
+MainActivity: 调用后：name=Jerry
+```
+
+**调用Java private方法也一样，Java的访问修饰符对C++无效。**
 
 #### 调用Java静态方法
 
+Java层：native方法定义和调用
 
+```java
+private static int height = 170;
+
+public static int getHeight() {
+    return height;
+}
+
+public native int invokeStaticMethod();
+
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    Log.i(TAG, "调用静态方法：getHeight() = " + invokeStaticMethod());
+}
+```
+
+C++层：
+
+```c++
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_github_xch168_ndkdemo_MainActivity_invokeStaticMethod(JNIEnv *env, jobject instance) {
+    // 1.获取对应的 class
+    jclass jclazz = env->GetObjectClass(instance);
+    // 2.通过class类找到对应的静态方法
+    jmethodID mid = env->GetStaticMethodID(jclazz, "getHeight", "()I");
+    // 3.通过class调用对应的静态方法
+    return env->CallStaticIntMethod(jclazz, mid);
+}
+```
+
+输出结果：
+
+```java
+MainActivity: 调用静态方法：getHeight() = 170
+```
 
 #### 调用Java父类方法
 
+Java层：native方法定义和调用
 
+```java
+public class BaseActivity extends AppCompatActivity {
 
-### JNI函数的字符串处理
+    public String hello(String name) {
+        return "Welcome to JNI world, " + name;
+    }
+}
 
+public class MainActivity extends BaseActivity {
+	//……
+    public native String invokeSuperMethod();
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        Log.i(TAG, "调用父类方法：hello(name) = " + invokeSuperMethod());
+    }
+}
+```
+
+C++层：
+
+```c++
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_github_xch168_ndkdemo_MainActivity_invokeSuperMethod(JNIEnv *env, jobject instance) {
+    // 1.通过反射获取 class
+    jclass jclazz = env->FindClass("com/github/xch168/ndkdemo/BaseActivity");
+    if (jclazz == NULL) {
+        char c[10] = "error";
+        return env->NewStringUTF(c);
+    }
+    // 2.通过class找到对应的方法id
+    jmethodID mid = env->GetMethodID(jclazz, "hello", "(Ljava/lang/String;)Ljava/lang/String;");
+    char ch[10] = "Tom";
+    jstring jstr = env->NewStringUTF(ch);
+    // 3.调用方法
+    return (jstring) env->CallNonvirtualObjectMethod(instance, jclazz, mid, jstr);
+}
+```
+
+输出结果：
+
+```java
+MainActivity: 调用父类方法：hello(name) = Welcome to JNI world, Tom
+```
+
+**两个不同点**：
+
+- 获取的是父类的方法，所有不能通过GetObjectClass获取，需要通过反射`FindClass`获取；
+- 调用父类的方法是`CallNonvirtual{type}Method`函数。Novirtual是非虚函数。
+
+### Java方法传递参数给JNI函数
+
+native方法既可以传递基本类型参数给JNI（可以不经过转换直接使用），也可以传递复杂类型（需要转换为C/C++的数据结构才能使用）如数组，String或自定义的类等。
+
+用到的JNI函数：
+
+- 获取数组长度：`GetArrayLength(j{type}Array)`，type为基础类型；
+- 数组转换为对应类型的指针：`Get{type}ArrayElements(jarr, 0)`
+- 获取构造函数的jmethodID时，仍然是用`env->GetMethodID(jclass, methodName, sign)`获取，方法名是`<init>`；
+- 通过构造函数new一个jobject，`env->NewObject(jclass, constructorMethodId, param...)`，无参构造函数param为空。
+
+#### 数组参数的传递
+
+Java层：
+
+```java
+public native int intArrayMethod(int[] arr);
+
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    Log.i(TAG, "intArrayMethod: " + intArrayMethod(new int[] {4, 3, 9, 9}));
+}
+```
+
+C++层：
+
+```c++
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_github_xch168_ndkdemo_MainActivity_intArrayMethod(JNIEnv *env, jobject instance, jintArray arr_) {
+    jint *arr = env->GetIntArrayElements(arr_, NULL);
+
+    int sum = 0;
+    int len = env->GetArrayLength(arr_);
+    for (int i = 0; i < len; ++i) {
+        sum += arr[i];
+    }
+
+    env->ReleaseIntArrayElements(arr_, arr, 0);
+    return sum;
+}
+```
+
+输出结果：
+
+```java
+MainActivity: intArrayMethod: 25
+```
+
+#### 自定义对象参数的传递
+
+Java层：
+
+```java
+public class Person {
+    private String name;
+    private int age;
+
+    public Person() {
+    }
+
+    public Person(int age, String name) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Person: {name:" + name + ", age:" + age + "}";
+    }
+}
+
+//------
+public native Person objectMethod(Person person);
+
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    Log.i(TAG, "objectMethod: " + objectMethod(new Person()).toString());
+}
+```
+
+C++层：
+
+```c++
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_github_xch168_ndkdemo_MainActivity_objectMethod(JNIEnv *env, jobject instance, jobject person) {
+
+    jclass clazz = env->GetObjectClass(person); // 主要用的是person，而不是instance
+    if (clazz == NULL) {
+        return env->NewStringUTF("cannot find class");
+    }
+    jmethodID constructorMid = env->GetMethodID(clazz, "<init>", "(ILjava/lang/String;)V");
+    if (constructorMid == NULL) {
+        return env->NewStringUTF("cannot find constructor method");
+    }
+    jstring name = env->NewStringUTF("Tom");
+    return env->NewObject(clazz, constructorMid, 25, name);
+}
+```
+
+输出结果：
+
+```java
+MainActivity: objectMethod: Person: {name:Tom, age:25}
+```
 
 ### 参考链接
 
