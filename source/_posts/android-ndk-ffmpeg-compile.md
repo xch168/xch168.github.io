@@ -443,3 +443,4 @@ Java_com_github_xch168_ffmpegdemo_MainActivity_configurationInfo(JNIEnv *env, jo
 3. [Ubuntu编译Android版本FFmpeg](https://blog.csdn.net/tyutccser/article/details/80619065)
 4. [Unified Headers](https://android.googlesource.com/platform/ndk/+/master/docs/UnifiedHeaders.md#supporting-unified-headers-in-your-build-system)
 5. [Android最简单的基于FFmpeg的例子(一)---编译FFmpeg类库](http://www.ihubin.com/blog/android-ffmpeg-demo-1/)
+6. [Android最简单的基于FFmpeg的例子(二)---测试编译好的SO库](http://www.ihubin.com/blog/android-ffmpeg-demo-2/)
