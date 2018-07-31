@@ -368,7 +368,6 @@ Java_com_github_xch168_ffmpegdemo_MainActivity_avformatInfo(JNIEnv *env, jobject
     return env->NewStringUTF(info);
 }
 
-extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_github_xch168_ffmpegdemo_MainActivity_avcodecInfo(JNIEnv *env, jobject instance) {
 
@@ -403,7 +402,6 @@ Java_com_github_xch168_ffmpegdemo_MainActivity_avcodecInfo(JNIEnv *env, jobject 
     return env->NewStringUTF(info);
 }
 
-extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_github_xch168_ffmpegdemo_MainActivity_avfilterInfo(JNIEnv *env, jobject instance) {
 
@@ -418,7 +416,6 @@ Java_com_github_xch168_ffmpegdemo_MainActivity_avfilterInfo(JNIEnv *env, jobject
     return env->NewStringUTF(info);
 }
 
-extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_github_xch168_ffmpegdemo_MainActivity_configurationInfo(JNIEnv *env, jobject instance) {
 
