@@ -8,6 +8,8 @@ tags: [Android, NDK, FFmpeg]
 
 > 在上一篇文章 [Android NDK交叉编译FFmpeg](https://xch168.github.io/2018/07/22/android-ndk-ffmpeg-compile/) 中，编译出的FFmpeg有好几个库，使用起来比较麻烦，所以这篇文章将要介绍如何将FFmpeg编译成一个单独的libffmpeg.so库。
 
+<!--more-->
+
 ### 编译环境
 
 > - Mac OS X  10.13.6
