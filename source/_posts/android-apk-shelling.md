@@ -10,6 +10,18 @@ tags: [Android, Decompile]
 
 <!--more-->
 
+经过加固后的apk，通过`dex2jar`反编译：
+
+腾讯乐固：
+
+![legu](android-apk-shelling\legu.png)
+
+360加固：
+
+![360jiagu](android-apk-shelling\360jiagu.png)
+
+从上面可以看出，经过加固后的apk，通过常规方法反编译无法获取到源码。
+
 ### 下载工具
 
 #### 脱壳工具FDex2
@@ -32,19 +44,62 @@ tags: [Android, Decompile]
 
 Step1:
 
-
+将`VirtualXposed`、`FDex2`和**需要脱壳的应用**都安装到手机上。
 
 Step2:
+
+启动`VirtualXposed`，并在`VirtualXposed`中安装`FDex2`:
+
+![vp-install-fdex2](android-apk-shelling\vp-install-fdex2.gif)
 
 
 
 Step3:
 
+在`VirtualXposed`中激活`FDex2`:
 
+![active-fdex2](android-apk-shelling\active-fdex2.gif)
 
 Step4:
 
+在`VirtualXposed`中安装要脱壳的应用，方法和Step2一样。
 
+Step5:
+
+启动`VirtualXposed`中的`FDex2`，并配置要脱壳的应用。
+
+![fdex2-config](android-apk-shelling\fdex2-config.png)
+
+Step6:
+
+在`VirtualXposed`中运行要脱壳的应用。
+
+Step7:
+
+脱壳后的dex文件：
+
+![shelling-dex](android-apk-shelling\shelling-dex.png)
+
+导出脱壳的dex文件：
+
+root设备：
+
+```shell
+adb root
+adb pull /data/user/0/iv.va.exposed/virtual/data/user/0/{packageName}   {电脑上的目录}
+```
+
+未root设备：
+
+在`VirtualXposed`中，设置-->高级设置-->文件管理，安装文件管理器，然后通过文件管理器进入到指定的目录，通过`分享`功能发到电脑上。
+
+Step8：
+
+通过`dex2jar`对 脱壳的dex进行反编译：
+
+![shelling-dex2jar](android-apk-shelling\shelling-dex2jar.png)
+
+从上图就可以看到脱壳后的dex文件被成功的反编译。
 
 ### FDex2核心代码MainHook
 
