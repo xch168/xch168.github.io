@@ -17,3 +17,5 @@ tags: [Android]
 3. [RecyclerView Scrolling Performance](https://stackoverflow.com/questions/27188536/recyclerview-scrolling-performance)
 4. [Optimizing RecyclerView/ListView](https://stackoverflow.com/questions/27993627/optimizing-recyclerview-listview)
 5. [RecyclerView 列表类控件卡顿优化](http://www.cnblogs.com/ldq2016/p/9039979.html)
+6. [RecyclerView 数据预取](https://juejin.im/entry/58a3f4f62f301e0069908d8f)
+
