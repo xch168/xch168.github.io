@@ -34,6 +34,10 @@ Android Studio中已有的`Empty Activity`模板：
 - root文件：存放模板文件和资源文件
 - 效果缩略图
 
+模板变量处理流程：
+
+![template_variable_dataflow](Android-Studio-custom-code-template\template_variable_dataflow.png)
+
 #### template.xml
 
 ```xml
@@ -124,23 +128,120 @@ Android Studio中已有的`Empty Activity`模板：
 
 #### globals.xml.ftl
 
+```xml
+<globals>
+    <global id="hasNoActionBar" type="boolean" value="false" />
+    <global id="parentActivityClass" value="" />
+    <global id="simpleLayoutName" value="${layoutName}" />
+    <global id="excludeMenu" type="boolean" value="true" />
+    <global id="generateActivityTitle" type="boolean" value="false" />
+    <#include "../common/common_globals.xml.ftl" />
+</globals>
+```
 
+这个文件用于定义一些全局变量。
+
+**说明**：
+
+`<global>`：表示一个全局变量
+
+- id：变量名
+- type：变量类型
+- value：默认值
+
+访问变量：`${变量id}`
 
 #### recipe.xml.ftl
 
+```xml
+<#import "root://activities/common/kotlin_macros.ftl" as kt>
+<recipe>
+    <#include "../common/recipe_manifest.xml.ftl" />
+    <@kt.addAllKotlinDependencies />
 
+<#if generateLayout>
+    <#include "../common/recipe_simple.xml.ftl" />
+    <open file="${escapeXmlAttribute(resOut)}/layout/${layoutName}.xml" />
+</#if>
+
+    <instantiate from="root/src/app_package/SimpleActivity.${ktOrJavaExt}.ftl"
+                   to="${escapeXmlAttribute(srcOut)}/${activityClass}.${ktOrJavaExt}" />
+                                  
+    <open file="${escapeXmlAttribute(srcOut)}/${activityClass}.${ktOrJavaExt}" />
+
+</recipe>
+```
+
+> 该文件用于定义如何生成代码和文件。
+
+**说明**：
+
+- `<#include>`：导入另一个ftl文件
+- `<open>`：在代码生成后打开指定文件，例如，当我们创建一个Activity后，AS会自动打开Activity及布局文件。
+- `<instantiate>`：将`.ftl`文件转成`.java`或`.kt`文件。
+- `<copy>`：用于从`root`文件夹中复制文件到目标目录。
+- `<merge>`：用于合并文件，如将模板的strings.xml合并到我们项目中的strings.xml
 
 ### Freemarker语法
+
+> AS 中模板的定义使用的是Freemarker的语法。
+
+#### 语法
+
+- `${变量名}`：访问变量值
+
+- `<#if  变量名>`：条件判断
+- `<#include "xx.ftl">`：引入其他模板文件
+
+实例：EmptyActivity\root\src\app_package\SimpleActivity.java.ftl
+
+```java
+package ${packageName};
+
+import ${superClassFqcn};
+import android.os.Bundle;
+<#if (includeCppSupport!false) && generateLayout>
+import android.widget.TextView;
+</#if>
+
+public class ${activityClass} extends ${superClass} {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+<#if generateLayout>
+        setContentView(R.layout.${layoutName});
+       <#include "../../../../common/jni_code_usage.java.ftl">
+<#elseif includeCppSupport!false>
+
+        // Example of a call to a native method
+        android.util.Log.d("${activityClass}", stringFromJNI());
+</#if>
+    }
+<#include "../../../../common/jni_code_snippet.java.ftl">
+}
+```
+
+
+
+从模板到代码的流程：
+
+![code_generation_process](Android-Studio-custom-code-template\code_generation_process.png)
+
+
 
 
 
 ### 自定义MVP模板
 
-
+> 在Google给出的MVP Sample中，每创建一个页面，需要创建：
+>
+> `XxActivity`、`XxFragment`、`XxContract`、`XxPresenter`四个文件，步骤繁琐，且AS目前没有提供相应的模板，所以接下来将自定义一个MVP的模板，来简化这些繁琐的操作。
 
 ### 参考链接
 
 1. [Android Studio自定义模板 写页面竟然可以如此轻松](https://blog.csdn.net/lmj623565791/article/details/51635533)
-2. [TemplateBuilder(中文版)](https://puke3615.github.io/2017/03/06/TemplateBuilder[Chinese]/)
-3. [Android Studio 轻松构建自定义模板](https://www.jianshu.com/p/fa974a5dc2ff)
-4. [Android Studio Template(模板)开发](https://www.jianshu.com/p/e3548f441440)
+2. [Custom Android Code Templates](http://www.slideshare.net/murphonic/custom-android-code-templates-15537501)
+3. [TemplateBuilder(中文版)](https://puke3615.github.io/2017/03/06/TemplateBuilder[Chinese]/)
+4. [Android Studio 轻松构建自定义模板](https://www.jianshu.com/p/fa974a5dc2ff)
+5. [Android Studio Template(模板)开发](https://www.jianshu.com/p/e3548f441440)
