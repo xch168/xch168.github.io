@@ -238,6 +238,334 @@ public class ${activityClass} extends ${superClass} {
 >
 > `XxActivity`、`XxFragment`、`XxContract`、`XxPresenter`四个文件，步骤繁琐，且AS目前没有提供相应的模板，所以接下来将自定义一个MVP的模板，来简化这些繁琐的操作。
 
+#### template.xml
+
+```xml
+<?xml version="1.0"?>
+<template
+    format="5"
+    revision="5"
+    name="Page"
+    minApi="9"
+    minBuildApi="14"
+    description="Creates a new MVP page">
+
+    <category value="MVP" />
+    <formfactor value="Mobile" />
+
+    <parameter
+        id="activityClass"
+        name="Activity Name"
+        type="string"
+        constraints="class|unique|nonempty"
+        suggest="${layoutToActivity(activityLayout)}"
+        default="MainActivity"
+        help="The name of the activity class to create" />
+
+    <parameter
+        id="activityLayout"
+        name="Activity Layout Name"
+        type="string"
+        constraints="layout|unique|nonempty"
+        suggest="${activityToLayout(activityClass)}"
+        default="activity_main"
+        help="The name of the layout to create for the activity" />
+
+    <parameter
+        id="fragmentClass"
+        name="Fragment Name"
+        type="string"
+        constraints="class|unique|nonempty"
+        suggest="${underscoreToCamelCase(classToResource(activityClass))}Fragment"
+        default="MainFragment"
+        help="The name of the fragment class to create" />
+
+    <parameter
+        id="fragmentLayout"
+        name="Fragment Layout Name"
+        type="string"
+        constraints="layout|unique|nonempty"
+        suggest="fragment_${classToResource(fragmentClass)}"
+        default="fragment_main"
+        help="The name of the layout to create for the fragment" />
+
+    <parameter
+        id="contractClass"
+        name="Contract Name"
+        type="string"
+        constraints="class|unique|nonempty"
+        suggest="${underscoreToCamelCase(classToResource(fragmentClass))}Contract"
+        default="MainViewModel"
+        help="The name of the contract class to create" />
+
+    <parameter
+        id="presenterClass"
+        name="Presenter Name"
+        type="string"
+        constraints="class|unique|nonempty"
+        suggest="${underscoreToCamelCase(classToResource(fragmentClass))}Presenter"
+        default="MainViewModel"
+        help="The name of the presenter class to create" />
+
+    <parameter
+        id="isLauncher"
+        name="Launcher Activity"
+        type="boolean"
+        default="false"
+        help="If true, this activity will have a CATEGORY_LAUNCHER intent filter, making it visible in the launcher" />
+
+    <parameter
+        id="packageName"
+        name="Package name"
+        type="string"
+        constraints="package"
+        default="com.mycompany.myapp" />
+
+    <parameter
+        id="pagePackage"
+        name="Page package path"
+        type="string"
+        constraints="package"
+        suggest="ui.${classToResource(fragmentClass)?replace('_', '')}"
+        default="ui.main"
+        help="The package path for the page." />
+
+    <!-- 128x128 thumbnails relative to template.xml -->
+    <thumbs>
+        <!-- default thumbnail is required -->
+        <thumb>template_blank_activity.png</thumb>
+    </thumbs>
+
+    <globals file="globals.xml.ftl" />
+    <execute file="recipe.xml.ftl" />
+
+</template>
+```
+
+#### globals.xml.ftl
+
+```xml
+<?xml version="1.0"?>
+<globals>
+    <global id="hasNoActionBar" type="boolean" value="false" />
+    <global id="parentActivityClass" value="" />
+    <global id="simpleLayoutName" value="${activityLayout}" />
+    <global id="excludeMenu" type="boolean" value="true" />
+    <global id="generateActivityTitle" type="boolean" value="false" />
+    <#include "../../activities/common/common_globals.xml.ftl" />
+</globals>
+```
+
+#### recipe.xml.ftl
+
+```xml
+<?xml version="1.0"?>
+<recipe>
+
+    <#--  生成mainfest配置  -->
+    <merge from="root/AndroidManifest.xml.ftl"
+           to="${escapeXmlAttribute(manifestOut)}/AndroidManifest.xml" />
+
+    <#--  生成布局文件  -->
+    <instantiate from="root/res/layout/activity.xml.ftl"
+                   to="${escapeXmlAttribute(resOut)}/layout/${escapeXmlAttribute(activityLayout)}.xml" />
+    <instantiate from="root/res/layout/fragment.xml.ftl"
+                   to="${escapeXmlAttribute(resOut)}/layout/${escapeXmlAttribute(fragmentLayout)}.xml" />
+
+    <#--  生成.java文件  -->
+    <instantiate from="root/src/app_package/Activity.${ktOrJavaExt}.ftl"
+                   to="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${activityClass}.${ktOrJavaExt}" />
+    <instantiate from="root/src/app_package/Fragment.${ktOrJavaExt}.ftl"
+                   to="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${fragmentClass}.${ktOrJavaExt}" />    
+    <instantiate from="root/src/app_package/Contract.${ktOrJavaExt}.ftl"
+                   to="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${contractClass}.${ktOrJavaExt}" />
+    <instantiate from="root/src/app_package/Presenter.${ktOrJavaExt}.ftl"
+                   to="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${presenterClass}.${ktOrJavaExt}" />   
+
+    <#--  打开文件.java文件  -->
+    <open file="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${activityClass}.${ktOrJavaExt}" />
+    <open file="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${fragmentClass}.${ktOrJavaExt}" />
+    <open file="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${contractClass}.${ktOrJavaExt}" />
+    <open file="${escapeXmlAttribute(srcOut)}/${pagePackage?replace('.', '/')}/${presenterClass}.${ktOrJavaExt}" />
+
+    <#--  打开布局文件  -->
+    <open file="${escapeXmlAttribute(resOut)}/layout/${escapeXmlAttribute(activityLayout)}.xml" />
+    <open file="${escapeXmlAttribute(resOut)}/layout/${escapeXmlAttribute(fragmentLayout)}.xml" />
+
+</recipe>
+```
+
+#### Activity.java.ftl
+
+```java
+package ${packageName}.${pagePackage};
+
+import ${superClassFqcn};
+import android.os.Bundle;
+import com.github.xch168.mvp.util.ActivityUtil;
+
+import ${packageName}.R;
+
+public class ${activityClass} extends ${superClass} {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.${activityLayout});
+
+        ${fragmentClass} fragment = (${fragmentClass}) getSupportFragmentManager().findFragmentById(R.id.contentFrame);
+
+        if (fragment == null) {
+            fragment = ${fragmentClass}.newInstance();
+
+            ActivityUtil.addFragmentToActivity(getSupportFragmentManager(), fragment, R.id.contentFrame);
+        }
+
+        new ${presenterClass}(fragment);
+
+    }
+
+}
+```
+
+#### Fragment.java.ftl
+
+```java
+package ${packageName}.${pagePackage};
+
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import ${packageName}.R;
+
+public class ${fragmentClass} extends Fragment implements ${contractClass}.View {
+
+    private ${contractClass}.Presenter mPresenter;
+
+    public static ${fragmentClass} newInstance() {
+        Bundle arguments = new Bundle();
+        arguments.putString("", "");
+        ${fragmentClass} fragment = new ${fragmentClass}();
+        fragment.setArguments(arguments);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View root = inflater.inflate(R.layout.${fragmentLayout}, container, false);
+
+
+        return root;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mPresenter.start();
+    }
+
+    @Override
+    public void setPresenter(@NonNull ${contractClass}.Presenter presenter) {
+        mPresenter = presenter;
+    }
+}
+```
+
+#### Contract.java.ftl
+
+```java
+package ${packageName}.${pagePackage};
+
+import com.github.xch168.mvp.ui.BasePresenter;
+import com.github.xch168.mvp.ui.BaseView;
+
+public interface ${contractClass} {
+
+    interface View extends BaseView<Presenter> {
+
+    }
+
+    interface Presenter extends BasePresenter {
+        
+    }  
+}
+```
+
+#### Presenter.java.ftl
+
+```java
+package ${packageName}.${pagePackage};
+
+public class ${presenterClass} implements ${contractClass}.Presenter {
+
+    private final ${contractClass}.View mView;
+
+    public ${presenterClass}(${contractClass}.View view) {
+
+        mView = view;
+
+        mView.setPresenter(this);
+    }
+
+    @Override
+    public void start() {
+        
+    }
+}
+```
+
+#### AndroidManifest.xml.ftl
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${packageName}">
+
+    <application>
+        <activity android:name="${packageName}.${pagePackage}.${activityClass}"
+            <#if generateActivityTitle!true>
+                <#if isNewProject>
+                    android:label="@string/app_name"
+                <#else>
+                    android:label="@string/title_${activityToLayout(activityClass)}"
+                </#if>
+            </#if>
+            <#if hasNoActionBar>
+                android:theme="@style/${themeNameNoActionBar}"
+            <#elseif (requireTheme!false) && !hasApplicationTheme && appCompat>
+                android:theme="@style/${themeName}"
+            </#if>
+            <#if buildApi gte 16 && parentActivityClass != "">
+                android:parentActivityName="${parentActivityClass}"
+            </#if>>
+            <#if parentActivityClass != "">
+                <meta-data android:name="android.support.PARENT_ACTIVITY"
+                    android:value="${parentActivityClass}" />
+            </#if>
+        </activity>
+    </application>
+</manifest>
+```
+
+### 使用MVP模板
+
+> 将模板文件复制到`<Android Studio安装目录>/plugins/android/lib/templates/{userName}/MVP`目录下，然后重启Android Studio。
+
+**Step1**：新建一个MVP页面
+
+![Android-Studio-custom-code-template\use_mvp_templage.jpg](Android-Studio-custom-code-template\use_mvp_templage.jpg)
+
+**Step2**：配置参数
+
+![fill_mvp_template](Android-Studio-custom-code-template\fill_mvp_template.png)
+
+**Step3**：点击Finish，将自动生成相关代码及资源文件
+
+![gen_mvp_code](Android-Studio-custom-code-template\gen_mvp_code.png)
+
 ### 参考链接
 
 1. [Android Studio自定义模板 写页面竟然可以如此轻松](https://blog.csdn.net/lmj623565791/article/details/51635533)
