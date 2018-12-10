@@ -1,6 +1,6 @@
 ---
 title: 基于Travis CI的Android项目自动构建流程
-date: 2018-12-08 22:58:06
+date: 2018-12-15 22:58:06
 tags: [Android, CI]
 ---
 

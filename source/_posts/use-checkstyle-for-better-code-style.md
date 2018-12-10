@@ -1,7 +1,7 @@
 ---
 title: 使用Checkstyle规范代码
-date: 2018-12-09 20:11:30
-tags: [Android]
+date: 2018-12-10 21:11:30
+tags: [Android, Java, Tools]
 ---
 
 ### 概述
@@ -27,6 +27,26 @@ tags: [Android]
 ### Android Studio Run之前执行checkstyle
 
 
+
+### CheckStyle插件的使用
+
+#### 安装CheckStyle-IDEA插件
+
+![install_checkstyle-plugin](use-checkstyle-for-better-code-style/install_checkstyle-plugin.png)
+
+#### 添加CheckStyle配置文件
+
+![config_checkstyle](use-checkstyle-for-better-code-style/config_checkstyle.png)
+
+#### 进行代码检查
+
+- 在CheckStyle控制面板
+
+![checkstyle_pane](use-checkstyle-for-better-code-style/checkstyle_pane.png)
+
+- 右键检查当前文件
+
+![check_file](use-checkstyle-for-better-code-style/check_file.png)
 
 ### 参考链接
 
