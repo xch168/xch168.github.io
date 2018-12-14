@@ -12,11 +12,51 @@ tags: [Android, Java, Tools]
 
 <!--more-->
 
+### 创建checkstyle.xml配置文件
+
+> - 每个checkstyle配置文件必须包含`Checker`作为根module；
+> - `TreeWalker` module用来遍历java文件，并定义一些属性；
+> - `TreeWalker` module包含多个子module，用来进行检查规范。
+
+```xml
+
+```
+
+
+
 ### 配置checkstyle
 
+Step1: 在`gradle`文件夹下创建一个`checkstyle.gradle`文件：
 
+```groovy
+apply plugin: 'checkstyle'
 
-### 设置checkstyle配置文件
+checkstyle {
+    toolVersion = 8.13
+    configFile = rootProject.file('checkstyle.xml')
+    ignoreFailures = false
+    showViolations = true
+}
+
+task checkStyle(type: Checkstyle) {
+    source = 'src/main/java'
+    include '**/*.java'
+
+    classpath = files()
+}
+
+afterEvaluate {
+    if (project.tasks.getByName("check")) {
+        check.dependsOn('checkStyle')
+    }
+}
+```
+
+Step2: 在需要进行代码检查的module中的`build.gradle`文件中添加：
+
+```groovy
+apply from: rootProject.file('gradle/checkstyle.gradle')
+```
 
 
 
@@ -54,5 +94,7 @@ tags: [Android, Java, Tools]
 2. [使用Checkstyle规范代码](https://blog.csdn.net/naivor/article/details/64939719)
 3. [如何利用工具提高你的Android代码质量(Checkstyle、Findbugs、PMD)](https://blog.csdn.net/u014651216/article/details/52813124)
 4. [详解CheckStyle的检查规则（共138条规则）](https://blog.csdn.net/yang1982_0907/article/details/18086693)
-5. [Google Style](https://github.com/google/styleguide/blob/gh-pages/intellij-java-google-style.xml)
-6. [Square Style](https://github.com/square/java-code-styles)
+5. [Java代码规范之CheckStyle + Git Hook](http://www.czhzero.com/2016/06/29/checkstyle-githook/)
+6. [Android项目git+gradle实现commit时checkstyle检查](https://www.jianshu.com/p/3337e9174c51)
+7. [Google Style](https://github.com/google/styleguide/blob/gh-pages/intellij-java-google-style.xml)
+8. [Square Style](https://github.com/square/okhttp/blob/master/checkstyle.xml)
