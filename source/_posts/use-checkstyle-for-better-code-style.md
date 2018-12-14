@@ -248,7 +248,7 @@ Step2: 在需要进行代码检查的module中的`build.gradle`文件中添加�
 apply from: rootProject.file('gradle/checkstyle.gradle')
 ```
 
-### 使用
+### 使用checkstyle
 
 **在终端运行命令**：
 
