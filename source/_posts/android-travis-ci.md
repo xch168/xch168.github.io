@@ -246,6 +246,66 @@ Step3: 自动化构建、部署
 
   ![travis_github](android-travis-ci/travis_github.png)
 
+### 上传apk到蒲公英
+
+> 蒲公英是APP内测分发平台，提供免费的APP内测分发托管，不但允许游客下载，还提供了二维码，下载速度快。
+
+Step1. 使用GitHub授权登录https://www.pgyer.com/user/login
+
+Step2. 获取API Key
+
+![pgyer_api_key](android-travis-ci/pgyer_api_key.png)
+
+Step3. 将获取的API Key配置到Travis CI的环境变量`PGYER_API_KEY`：
+
+![pgyer_api_key_env](android-travis-ci/pgyer_api_key_env.png)
+
+Step4. 在`.travis.yml`文件中，添加如下配置：
+
+```yaml
+# 添加蒲公英上传脚本
+before_install:
+- cd $TRAVIS_BUILD_DIR
+- wget -c https://raw.githubusercontent.com/Pgyer/TravisFile/master/pgyer_upload.sh
+ -O pgyer_upload.sh
+- chmod +x pgyer_upload.sh
+
+# 在apk上传到GitHub后，使用蒲公英的上传脚本将apk上传到蒲公英
+after_deploy:
+ - set -e
+ - $TRAVIS_BUILD_DIR/pgyer_upload.sh "${TRAVIS_BUILD_DIR}/app/build/outputs/apk/release/app-release.apk" $PGYER_API_KEY
+```
+
+Step5. 打完tag，Travis CI自动构建后，将在蒲公英的控制台看到上传的apk
+
+![pgyer_apk](android-travis-ci/pgyer_apk.png)
+
+### 上传apk到fir.im
+
+> fir.im和蒲公英的一样，都是免费的应用内测分发平台。
+
+Step1. 登录https://fir.im/
+
+Step2. 获取API Token。
+
+![firim_api_token](android-travis-ci/firim_api_token.png)
+
+Step3. 将获取的API Token配置到Travis CI的环境变量`FIR_API_TOKEN`。
+
+Step4. 在`.travis.yml`文件中，添加如下配置：
+
+```yaml
+before_install:
+- gem install fir-cli
+after_deploy:
+- fir p app/build/outputs/apk/release/app-release.apk -T $FIR_API_TOKEN -c "`git cat-file tag $TRAVIS_TAG`"
+```
+
+Step5. 打完tag，Travis CI自动构建后，将在fir.im的控制台看到上传的apk
+
+![fir_apk](android-travis-ci/fir_apk.png)
+
+[本文Demo](https://github.com/xch168/AndroidTravisCI)
 
 ### 参考链接
 
@@ -258,5 +318,6 @@ Step3: 自动化构建、部署
 7. [基于Travis CI搭建Android持续集成以及自动打包发布流程](https://www.jianshu.com/p/6dba7d6f79ff)
 8. [Android Travis CI与fir.im、GitHub集成](https://www.jianshu.com/p/745bea00dba7)
 9. [使用 Travis CI 实现持续集成 (Android)](https://www.pgyer.com/doc/view/travis_android)
-10. [Gradle 提示与诀窍](https://developer.android.com/studio/build/gradle-tips)
-11. [Travis CI Doc](https://docs.travis-ci.com/user/languages/android/)
+10. [fir-cli 使用说明](http://blog.fir.im/fir_cli/)
+11. [Gradle 提示与诀窍](https://developer.android.com/studio/build/gradle-tips)
+12. [Travis CI Doc](https://docs.travis-ci.com/user/languages/android/)
