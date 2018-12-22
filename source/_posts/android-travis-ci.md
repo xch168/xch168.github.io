@@ -71,6 +71,17 @@ script:
 
 ```
 
+> **Travis生命周期**：
+>
+> 1. before_install
+> 2. install：安装依赖
+> 3. before_script
+> 4. script：运行脚本
+> 5. aftersuccess or afterfailure：script阶段执行成功或失败时执行
+> 6. [OPTIONAL] before_deploy
+> 7. [OPTIONAL] deploy：部署
+> 8. after_script
+
 ### 保证自动化构建的密码和证书安全
 
 > Android项目发布需要证书文件和密码，将原始正常和密码放入到代码库是很不安全的。
@@ -304,6 +315,48 @@ after_deploy:
 Step5. 打完tag，Travis CI自动构建后，将在fir.im的控制台看到上传的apk
 
 ![fir_apk](android-travis-ci/fir_apk.png)
+
+### 发送完毕后自动发送邮件通知
+
+> 虽然Travis CI也有邮件通知功能，但是不能定制模板，通知内容仅仅为提示CI运行的结果，显然更适合开发人员。我们希望最终能以更友好的方式通知团队成员，同时考虑到邮件送达率，可优先选择 [Submail](https://www.mysubmail.com)、[SendCloud](https://sendcloud.sohu.com/)等国内邮件发送服务。
+
+这里以[Submail](https://www.mysubmail.com)为例：
+
+Step1. 注册登录[Submail](https://www.mysubmail.com)
+
+Step2. 添加发信域名（这需要有自己的域名）
+
+![send_domain](android-travis-ci/send_domain.png)
+
+Step3. 创建APPID，并将APPKEY配置到Travis CI控制台的环境变量`SUBMAIL_SIGN`。
+
+![create_appid](android-travis-ci/create_appid.png)
+
+Step4. 创建一封触发式邮件模板
+
+```
+@var(TRAVIS_REPO_SLUG)新版本@var(TRAVIS_TAG)已经发布了，功能更新：
+
+
+@var(TAG_DESCRIPTION)
+
+
+去下载：
+
+https://fir.im/gkq1
+```
+
+Step5. 配置`.travis.yml`
+
+```yaml
+- curl -d "appid=14017&to=xucanhui168@gmail.com&subject=[自动通知] 安卓新版本$TRAVIS_TAG发布&project=Cpyvk2&signature=$SUBMAIL_SIGN&vars={\"TRAVIS_REPO_SLUG\":\"$TRAVIS_REPO_SLUG\",\"TRAVIS_TAG\":\"$TRAVIS_TAG\",\"TAG_DESCRIPTION\":\"$(git cat-file tag $TRAVIS_TAG | awk 1 ORS='<br>')\"}" https://api.submail.cn/mail/xsend.json
+```
+
+![project](android-travis-ci/project.png)
+
+Step5. 运行结果
+
+![mail](android-travis-ci/mail.png)
 
 [本文Demo](https://github.com/xch168/AndroidTravisCI)
 
