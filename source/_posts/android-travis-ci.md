@@ -349,6 +349,7 @@ https://fir.im/gkq1
 Step5. 配置`.travis.yml`
 
 ```yaml
+after_deploy:
 - curl -d "appid=14017&to=xucanhui168@gmail.com&subject=[自动通知] 安卓新版本$TRAVIS_TAG发布&project=Cpyvk2&signature=$SUBMAIL_SIGN&vars={\"TRAVIS_REPO_SLUG\":\"$TRAVIS_REPO_SLUG\",\"TRAVIS_TAG\":\"$TRAVIS_TAG\",\"TAG_DESCRIPTION\":\"$(git cat-file tag $TRAVIS_TAG | awk 1 ORS='<br>')\"}" https://api.submail.cn/mail/xsend.json
 ```
 
