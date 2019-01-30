@@ -12,11 +12,132 @@ tags: [Android, 热修复]
 
 <!--more-->
 
+> Android中的热修复包括：`代码修复`、`资源修复`、`动态链接库修复`。本文主要讲解代码修复。
+
 ### 热修复原理
 
+>  代码修复的原理主要是类替换。类的替换就涉及到ClassLoader的使用，Android中可用来动态加载代码的ClassLoader有`PathClassLoader`、`DexClassLoader`。
+>
+> 因为PathClassLoader在Dalvik虚拟机中只能用来加载已安装apk的类，而DexClassLoader在Dalvik和ART虚拟机中都能加载未安装apk或者dex中的类，所以热修复使用DexClassLoader来加载补丁包中的类。
 
+![classloader](android-hotfix-principle-analysis/classloader.png)
 
+**ClassLoader.java**
 
+```java
+public abstract class ClassLoader {
+    
+    // ...
+    
+    public Class<?> loadClass(String name) throws ClassNotFoundException {
+        return loadClass(name, false);
+    }
+    
+    // 使用双亲委托的机制进行类的加载
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        // 首先，从缓存中查找类是否已经加载
+        Class<?> c = findLoadedClass(name);
+        if (c == null) {
+            try {
+                if (parent != null) {
+                    // 缓存找不到类，就委托给父加载器进行加载
+                    c = parent.loadClass(name, false);
+                } else {
+                    // 没有父加载器，则委托给顶级的BootstrapClassLoader进行加载
+                    c = findBootstrapClassOrNull(name);
+                }
+            } catch (ClassNotFoundException e) {
+                // ClassNotFoundException thrown if class not found
+                // from the non-null parent class loader
+            }
+
+            if (c == null) {
+                // 如果还是没找到类，就主动从自己的加载路径中去查找
+                c = findClass(name);
+            }
+        }
+        return c;
+    }
+    
+    // 这是ClassLoader主动加载类的方法，由子类具体实现
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        throw new ClassNotFoundException(name);
+    }
+    
+    // ...
+    
+}
+```
+
+**DexClassLoader.java**
+
+```java
+public class DexClassLoader extends BaseDexClassLoader {
+
+    public DexClassLoader(String dexPath, String optimizedDirectory, String librarySearchPath, ClassLoader parent) {
+        super(dexPath, null, librarySearchPath, parent);
+    }
+}
+```
+
+**BaseDexClassLoader.java**
+
+```java
+public class BaseDexClassLoader extends ClassLoader {
+    // ...
+    
+    // dex文件的路径列表
+    private final DexPathList pathList;
+    
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        List<Throwable> suppressedExceptions = new ArrayList<Throwable>();
+        Class c = pathList.findClass(name, suppressedExceptions);
+        if (c == null) {
+            ClassNotFoundException cnfe = new ClassNotFoundException("Didn't find class \"" + name + "\" on path: " + pathList);
+            for (Throwable t : suppressedExceptions) {
+                cnfe.addSuppressed(t);
+            }
+            throw cnfe;
+        }
+        return c;
+    }
+    // ...
+}
+```
+
+**DexPathList.java**
+
+```java
+final class DexPathList {
+    // ...
+    
+    // 每个元素代表着一个dex
+    private Element[] dexElements;
+    
+    public Class<?> findClass(String name, List<Throwable> suppressed) {
+        for (Element element : dexElements) {
+            Class<?> clazz = element.findClass(name, definingContext, suppressed);
+            if (clazz != null) {
+                return clazz;
+            }
+        }
+
+        if (dexElementsSuppressedExceptions != null) {
+            suppressed.addAll(Arrays.asList(dexElementsSuppressedExceptions));
+        }
+        return null;
+    }
+    
+    // ...
+}
+```
+
+**说明**：
+
+**通过上面几个类的关系，和类的查找过程，我们可以发现最终是通过遍历`DexPathList`的`dexElements`数组进行类的查找加载，当找到类就返回；**
+
+**dexElements数组的每个元素都代表着一个dex文件，所以为了让补丁包中要替换的类抢先于有bug的类被加载，就需要将补丁包dex插入到`dexElements`数组的头部。**
 
 ### 热修复实战
 
