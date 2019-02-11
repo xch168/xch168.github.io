@@ -195,27 +195,186 @@ public class AppManager {
 
 ##### Handler内存泄漏
 
+> 如果Handler中有`延迟任务`或者`等待执行的任务队列过长`，都有可能因为Handler继续执行而导致Activity发生泄漏。
 
+> 1. 首先，非静态的Handler类会默认持有外部类的引用，如Activity等。
+>
+> 2. 然后，还未处理完的消息（Message）中会持有Handler的引用。
+>
+> 3. 还未处理完的消息会处于消息队列中，即消息队列MessageQueue会持有Message的引用。
+>
+> 4. 消息队列MessageQueue位于Looper中，Looper的生命周期跟应用一致。
+
+> **引用链**：Looper  -> MessageQueue -> Message -> Handler -> Activity
+
+**解决方法**：
+
+- 静态内部类+弱引用
+
+  > 静态内部类默认不持有外部类的引用，所以改成静态内部类即可。同时，可以采用弱引用来持有Activity的引用。
+
+  ```java
+  private static class MyHandler extends Handler {
+  
+      private WeakReference<Activity> mWeakReference;
+  
+      public MyHandler(Activity activity) {
+          mWeakReference = new WeakReference<>(activity);
+      }
+  
+      @Override
+      public void handleMessage(Message msg) {
+          super.handleMessage(msg);
+          //...
+      }
+  }
+  ```
+
+- Activity退出时，移除所有信息
+
+  > 移除信息后，Handler将会跟Activity生命周期同步。
+
+  ```java
+  @Override
+  protected void onDestroy() {
+      super.onDestroy();
+  
+      mHandler.removeCallbacksAndMessages(null);
+  }
+  ```
+
+  
 
 ##### 多线程引起的内存泄漏
 
+> 匿名Thread类里持有外部类的引用。当Activity退出时，Thread有可能还在后头执行，这时就会发生内存泄露。
 
+```java
+new Thread(new Runnable() {
+    @Override
+    public void run() {
+
+    }
+}).start();
+```
+
+**解决方法**：
+
+- 静态内部类
+
+  > 静态内部类不持有外部类的引用。
+
+  ```java
+  private static class MyThread extends Thread {
+      // ...
+  }
+  ```
+
+- Activity退出时，结束线程
+
+  > 这是让线程的生命周期跟Activity一致。
 
 #### 集合类内存泄漏
 
 > 集合类添加元素后，将会持有元素对象的引用，导致该元素对象不能被垃圾回收，从而发生内存泄漏。
 
+```java
+List<Object> objectList = new ArrayList<>();
+for (int i = 0; i < 10; i++) {
+    Object obj = new Object();
+    objectList.add(obj);
+    obj = null;
+}
+```
 
+**说明**：虽然obj已经被置为空了，但是集合里还是持有Object的引用。
+
+**解决方法**：
+
+- 清空集合对象
+
+  ```java
+  objectList.clear();
+  objectList = null;
+  ```
+
+  
 
 #### 未关闭资源对象内存泄漏
 
 >一些资源对象需要在不使用的时候主动去关闭或者注销掉，否则的话，他们不会被垃圾回收，从而造成内存泄漏。
+
+##### 注销监听器
+
+>当我们需要使用系统服务时，比如执行某些后台任务、为硬件访问提供接口等等系统服务。我们需要将自己注册到服务的监听器中，然而，这会让服务持有Activity的引用，如果忘记Activity销毁时取消注册，就会导致Activity泄露。
+
+```java
+unregisterXxx(xxx);
+```
+
+##### 关闭输入输出流
+
+> 在使用IO、File流等资源时要及时关闭。这些资源在进行读写操作时通常都使用了缓冲，如果不及时关闭，这些缓冲对象就会一直被占用而得不到释放，以致发生内存泄露。
+
+```java
+inputStream.close();
+outputStream.close();
+```
+
+##### 回收Bitmap
+
+> Bitmap对象比较占内存，当它不再被使用的时候，最好调用`Bitmap.recycle()`方法主动进行回收。
+
+```java
+bitmap.recycle();
+bitmap = null;
+```
+
+##### 停止动画
+
+> 属性动画中有一类无限动画，如果Activity退出时不停止动画的话，动画会一直执行下去。因为动画会持有View的引用，View又持有Activity，最终Activity就不能被回收掉。只要我们在Activity退出把动画停止掉即可。
+
+```java
+animation.cancel();
+```
+
+##### 销毁WebView
+
+> WebView在加载网页后会长期占用内存而不能被释放，因此在Activity销毁后要调用它的`destory()`方法来销毁它以释放内存。此外，WebView在Android 5.1上也会出现其他的内存泄露。
+
+```java
+@Override
+protected void onDestroy() {
+    if( mWebView!=null) {
+        ViewParent parent = mWebView.getParent();
+        if (parent != null) {
+            ((ViewGroup) parent).removeView(mWebView);
+        }
+
+        mWebView.stopLoading();
+        // 退出时调用此方法，移除绑定的服务，否则某些特定系统会报错
+        mWebView.getSettings().setJavaScriptEnabled(false);
+        mWebView.clearHistory();
+        mWebView.clearView();
+        mWebView.removeAllViews();
+        mWebView.destroy();
+
+    }
+    super.onDestroy();
+}
+```
 
 
 
 ### 内存分析工具
 
 #### dumpsys
+
+> dumpsys命令可以查看内存使用情况。
+
+```bash
+adb shell dumpsys meminfo <packageName>
+```
 
 
 
@@ -236,10 +395,10 @@ public class AppManager {
 ### 参考链接
 
 1. [循序渐进学用MAT排查Android Activity内存泄露](https://blog.csdn.net/u012735483/article/details/52434858)
-2. [微信 Android 终端内存优化实践](https://mp.weixin.qq.com/s/KtGfi5th-4YHOZsEmTOsjg)
-3. [Android内存泄漏查找和解决](https://blog.csdn.net/xyq046463/article/details/51769728)
-4. [ Android 内存泄漏总结](https://lrh1993.gitbooks.io/android_interview_guide/content/android/advance/memory-leak.html)
-5. [Android 内存泄露分析实战演练](https://mp.weixin.qq.com/s/_s88Xjti0YwO4rayKvF5Dg)
+2. [Android 内存泄露分析实战演练](https://mp.weixin.qq.com/s/_s88Xjti0YwO4rayKvF5Dg)
+3. [ Android 内存泄漏总结](https://lrh1993.gitbooks.io/android_interview_guide/content/android/advance/memory-leak.html)
+4. [微信 Android 终端内存优化实践](https://mp.weixin.qq.com/s/KtGfi5th-4YHOZsEmTOsjg)
+5. [Android内存泄漏查找和解决](https://blog.csdn.net/xyq046463/article/details/51769728)
 6. [Leakcanary检测内存泄漏汇总](https://www.jianshu.com/p/c345f63ec8e5)
 7. [Java内存分配机制及内存泄漏](https://www.jianshu.com/p/85f49e1ff813)
 8. [彻底搞懂Java内存泄露](https://www.jianshu.com/p/efec4c77e265)
