@@ -211,7 +211,7 @@ public class AppManager {
 
 - 静态内部类+弱引用
 
-  > 静态内部类默认不持有外部类的引用，所以改成静态内部类即可。同时，可以采用弱引用来持有Activity的引用。
+  > 静态内部类默认不持有外部类的引用，所以改成静态内部类即可。同时，可以采用弱引用来持有Activity的引用。(也可以使用WeakHandler库：https://github.com/badoo/android-weak-handler)
 
   ```java
   private static class MyHandler extends Handler {
