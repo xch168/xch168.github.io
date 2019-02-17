@@ -243,7 +243,6 @@ public class AppManager {
   }
   ```
 
-  
 
 ##### 多线程引起的内存泄漏
 
@@ -298,7 +297,6 @@ for (int i = 0; i < 10; i++) {
   objectList = null;
   ```
 
-  
 
 #### 未关闭资源对象内存泄漏
 
@@ -345,7 +343,7 @@ animation.cancel();
 ```java
 @Override
 protected void onDestroy() {
-    if( mWebView!=null) {
+    if (mWebView != null) {
         ViewParent parent = mWebView.getParent();
         if (parent != null) {
             ((ViewGroup) parent).removeView(mWebView);
@@ -376,21 +374,188 @@ protected void onDestroy() {
 adb shell dumpsys meminfo <packageName>
 ```
 
+![dumpsys](android-memory-leak-analysis/dumpsys.png)
 
+> **说明**：可以通过页面关闭前后`Views`和`Activities`的数量来判断是否发生泄漏。
 
-#### Memory Monitor
+#### Memory Profiler
+
+> Memory Profiler是Android Studio提供的一个内存分析工具。（本文使用的是Android Studio 3.3.1）
+
+**Memory Profiler面板介绍**：
+
+![Memory Profiler](android-memory-leak-analysis/memory-profiler-calloutspng.png)
+
+1. 用于强制执行垃圾回收Event的按钮。
+2. 用户捕获堆转储的按钮。
+3. 用于记录内存分配情况的按钮。
+4. 用于放大/缩小时间线的按钮。
+5. 用于跳转至实时内存数据的按钮。
+6. Event时间线，其显示Activity状态、用户输入Event和屏幕旋转Event。
+7. 内存使用量时间线，其包含以下内容：
+   - 一个显示每个内存类别使用多少内存的堆叠图表，如左侧的y轴以及顶部的彩色健所示。
+   - 虚线表示分配的对象数，如右侧的y轴所示。
+   - 用于表示每个垃圾回收Event的图标。
+
+**Dump Java Heap**
+
+> 这个功能是用来获取当前应用的内存快照。通过分析内存快照，查看指定类的实例在内存中的情况，及其对象的引用关系，来判断内存是否泄漏。
+
+**NOTE: 在dump前，先点击一下GC按钮来强制内存回收一下，这样分析内存比较准确。**
+
+![memory-profiler-analysis](android-memory-leak-analysis/memory-profiler-analysis.png)
 
 
 
 #### MAT
 
+> MAT (Memory Analyzer Tool)是一个快速且功能丰富的Java堆分析器，可以帮助您查找内存泄漏并减少内存消耗。
 
+> MAT下载地址：https://www.eclipse.org/mat/
+
+Step1. 从AS的Memory Profiler中导出`.hprof`内存快照文件。
+
+![memory-hprof](android-memory-leak-analysis/memory-hprof.png)
+
+Step2. 转换`.hprof`文件。
+
+> AS导出的.hprof文件只能在AS的Memory Profiler中查看，要在MAT中查看，要使用`hprof-conv`进行转换。
+
+> `hprof-conv`工具的路径：`<android_sdk>/paltform-tools/`
+
+转换命令：
+
+```bash
+hprof-conv heap-original.hprof heap-converted.hprof
+```
+
+Step3. 在MAT中打开转换好的`.hprof`文件。
+
+![mat-pane](android-memory-leak-analysis/mat-pane.png)
+
+**Histogram**：
+
+> Histogram是从类的角度进行分析，注重量的分析。
+
+![mat-histogram](android-memory-leak-analysis/mat-histogram.png)
+
+**内存分析**：
+
+Step1. 查询指定的类。
+
+![mat-histogram-search](android-memory-leak-analysis/mat-histogram-search.png)
+
+Step2. 查询指定的对象被引用的地方。
+
+![mat-incoming](android-memory-leak-analysis/mat-incoming.png)
+
+![mat-incoming-result](android-memory-leak-analysis/mat-incoming-result.png)
+
+Step3. 合并到GC Roots的最短路径。
+
+![mat-paths-to-gc-roots](android-memory-leak-analysis/mat-paths-to-gc-roots.png)
+
+![mat-paths-to-gc-roots-result](android-memory-leak-analysis/mat-paths-to-gc-roots-result.png)
+
+**说明**：从上图可以看到MainActivity被sTest对象的context属性强引用，导致MainActivity泄漏。
+
+**Dominator Tree**：
+
+> Dominator Tree是从对象实例的角度进行分析，注重引用关系分析。
+
+![mat-dominator](android-memory-leak-analysis/mat-dominator.png)
+
+**内存分析：**
+
+Step1. 查询指定的类。
+
+![mat-dominator-search](android-memory-leak-analysis/mat-dominator-search.png)
+
+Step2. 选中指定的类实例进行分析。
+
+![mat-dominator-path-to-gc-roots](android-memory-leak-analysis/mat-dominator-path-to-gc-roots.png)
+
+![mat-dominator-ref](android-memory-leak-analysis/mat-dominator-ref.png)
+
+Step3. 合并到GC Roots的最短路径。
+
+![](android-memory-leak-analysis/mat-dominator-gc-roots.png)
+
+![](android-memory-leak-analysis/mat-dominator-gc-roots-result.png)
+
+**说明**：与通过Histogram分析得到的结论一样。
 
 #### LeakCanary
 
+>LeakCanary是Square开源的Android和Java的内存泄漏检测库。
 
+>LeakCanary地址：https://github.com/square/leakcanary
 
+**集成LeakCanary**
 
+在`build.gradle`中配置：
+
+```groovy
+debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.6.3'
+releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.3'
+// Optional, if you use support library fragments:
+debugImplementation 'com.squareup.leakcanary:leakcanary-support-fragment:1.6.3'
+```
+
+在`Application`类中配置：
+
+```java
+public class App extends Application {
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            // This process is dedicated to LeakCanary for heap analysis.
+            // You should not init your app in this process.
+            return;
+        }
+        LeakCanary.install(this);
+        // Normal app init code...
+    }
+}
+```
+
+**使用**：
+
+内存泄漏代码：
+
+```java
+// MainActivity.java
+public class MainActivity extends AppCompatActivity {
+
+    private static Test sTest;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        sTest = new Test(this);
+    }
+}
+
+// Test.java
+public class Test {
+    private Context context;
+
+    public Test(Context context) {
+        this.context = context;
+    }
+}
+```
+
+运行应用，并退出首页，LeakCanary就会检测到MainActivity泄漏。
+
+![leakcanary-detect](android-memory-leak-analysis/leakcanary-detect.png)
+
+**说明**：从LeakCanary的检测结果可以看出，是因为MainActivity中的sTest对象的context属性持有MainActivity而导致其泄漏。
 
 ### 参考链接
 
@@ -402,10 +567,11 @@ adb shell dumpsys meminfo <packageName>
 6. [Leakcanary检测内存泄漏汇总](https://www.jianshu.com/p/c345f63ec8e5)
 7. [Java内存分配机制及内存泄漏](https://www.jianshu.com/p/85f49e1ff813)
 8. [彻底搞懂Java内存泄露](https://www.jianshu.com/p/efec4c77e265)
-9. [Android Studio和MAT结合使用来分析内存问题](https://mp.weixin.qq.com/s/ZkOxuM95GCD0g0NL14xmJw)
-10. [Android内存申请分析](https://mp.weixin.qq.com/s/b_lFfL1mDrNVKj_VAcA2ZA)
-11. [Android中导致内存泄漏的竟然是它----Dialog](https://mp.weixin.qq.com/s/sVbdugv-boumZ-oNk_92qg)
-12. [记一次Activity的内存泄漏和分析过程](https://www.jianshu.com/p/2823e17cf9b5)
-13. [实践App内存优化：如何有序地做内存分析与优化](https://juejin.im/post/5b1b5e29f265da6e01174b84)
-14. [Android内存分析命令](http://gityuan.com/2016/01/02/memory-analysis-command/)
-15. [JVM怎么判断对象是否已死？](https://lrh1993.gitbooks.io/android_interview_guide/content/java/virtual-machine/life-cycle.html)
+9. [使用 Memory Profiler 查看 Java 堆和内存分配](https://developer.android.com/studio/profile/memory-profiler)
+10. [Android Studio和MAT结合使用来分析内存问题](https://mp.weixin.qq.com/s/ZkOxuM95GCD0g0NL14xmJw)
+11. [Android内存申请分析](https://mp.weixin.qq.com/s/b_lFfL1mDrNVKj_VAcA2ZA)
+12. [Android中导致内存泄漏的竟然是它----Dialog](https://mp.weixin.qq.com/s/sVbdugv-boumZ-oNk_92qg)
+13. [记一次Activity的内存泄漏和分析过程](https://www.jianshu.com/p/2823e17cf9b5)
+14. [实践App内存优化：如何有序地做内存分析与优化](https://juejin.im/post/5b1b5e29f265da6e01174b84)
+15. [Android内存分析命令](http://gityuan.com/2016/01/02/memory-analysis-command/)
+16. [JVM怎么判断对象是否已死？](https://lrh1993.gitbooks.io/android_interview_guide/content/java/virtual-machine/life-cycle.html)
