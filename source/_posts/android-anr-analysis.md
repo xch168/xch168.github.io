@@ -73,6 +73,56 @@ public void onCreate() {
 >
 > 新版系统：`/data/anr/anr_*`
 
+```java
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        findViewById(R.id.btn_doANR).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Thread.sleep(100000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+}
+```
+
+上面代码触发了ANR，相关日志：
+
+```java
+"main" prio=5 tid=1 Sleeping
+  | group="main" sCount=1 dsCount=0 flags=1 obj=0x75115ec8 self=0xeb674000
+  | sysTid=10723 nice=-10 cgrp=default sched=0/0 handle=0xf02fa494
+  | state=S schedstat=( 384398145 34829357 257 ) utm=26 stm=12 core=2 HZ=100
+  | stack=0xff10b000-0xff10d000 stackSize=8MB
+  | held mutexes= // Java调用堆栈信息，可以查看调用关系，定位到具体位置
+  at java.lang.Thread.sleep(Native method)
+  - sleeping on <0x02ed72b7> (a java.lang.Object)
+  at java.lang.Thread.sleep(Thread.java:373)
+  - locked <0x02ed72b7> (a java.lang.Object)
+  at java.lang.Thread.sleep(Thread.java:314)
+  at com.github.xch168.anrdemo.MainActivity$1.onClick(MainActivity.java:18)// 触发ANR的方法
+  at android.view.View.performClick(View.java:6597)
+  at android.view.View.performClickInternal(View.java:6574)
+  at android.view.View.access$3100(View.java:778)
+  at android.view.View$PerformClick.run(View.java:25885)
+  at android.os.Handler.handleCallback(Handler.java:873)
+  at android.os.Handler.dispatchMessage(Handler.java:99)
+  at android.os.Looper.loop(Looper.java:193)
+  at android.app.ActivityThread.main(ActivityThread.java:6669)
+  at java.lang.reflect.Method.invoke(Native method)
+  at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:493)
+  at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:858)
+```
+
 ### 如何避免ANR
 
 1. 在工作线程中，执行耗时操作，如网络、DB操作或者Bitmap大小调整的操作。
