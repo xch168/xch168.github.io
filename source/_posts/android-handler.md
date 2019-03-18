@@ -429,6 +429,21 @@ new Thread(new Runnable() {
 }).start();
 ```
 
+#### 在onCreate方法获取View的宽高
+
+> 在onCreate方法中直接获取View的宽高都为0，因为View还没有测量完成。当通过View的post方法，其实是将这个Runnable放到主线程的Handler，等测量完成后，就会执行这个Runnable，因为测量操作也是Handler的一个任务，而Handler中的任务是线性执行的，所以post的任务会在测量完后执行。
+
+```java
+view.post(new Runnable() {
+    
+    @Override
+    public void run() {
+        int width = view.getWidth();
+        int height = view.getHeight(); 
+    }
+});
+```
+
 
 
 ### 总结
@@ -446,3 +461,4 @@ new Thread(new Runnable() {
 5. [Android应用程序消息处理机制（Looper、Handler）分析](https://blog.csdn.net/luoshengyang/article/details/6817933)
 6. [Android消息机制1-Handler(Java层)](http://gityuan.com/2015/12/26/handler-message-framework/)
 7. [进程和线程](https://developer.android.com/guide/components/processes-and-threads.html)
+8. [探究为何：在onCreate中通过View.post能获取宽高](https://www.jianshu.com/p/7f5342ceba34)
