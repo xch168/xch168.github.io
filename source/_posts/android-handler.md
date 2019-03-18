@@ -380,6 +380,57 @@ public class Handler {
 }
 ```
 
+### Handler的使用技巧
+
+#### 在子线程里弹Toast
+
+当我们尝试在子线程里直接弹Toast的时候，会crash：
+
+```java
+java.lang.RuntimeException: Can't toast on a thread that has not called Looper.prepare()
+```
+
+因为Toast的实现依赖于Handler，按子线程使用Handler的要求修改即可，同理的还有`Dialog`。
+
+```java
+new Thread(new Runnable() {
+
+    @Override
+    public void run() {
+        Looper.prepare();
+        Toast.makeText(MainActivity.this, "Toast显示出来了", Toast.LENGTH_SHORT).show();
+        Looper.loop();
+    }
+}).start();
+```
+
+#### 从其他线程访问UI线程
+
+> Android中只能在UI线程对UI进行修改，Android提供了下面几个方法来访问UI线程，其本质都是将消息发送给UI线程中的Handler。
+
+- Activity.runOnUiThread(Runnable)
+- View.post(Runnable)
+- View.postDelayed(Runnable, long)
+
+```java
+new Thread(new Runnable() {
+    
+    @Override
+    public void run() {
+        final Bitmap bitmap = loadImageFromNetwork("http://example.com/image.png");
+        mImageView.post(new Runnable() {
+            
+            @Override
+            public void run() {
+                mImageView.setImageBitmap(bitmap);
+            }
+        });
+    }
+}).start();
+```
+
+
+
 ### 总结
 
 ![handler-message](android-handler/handler-message.png)
