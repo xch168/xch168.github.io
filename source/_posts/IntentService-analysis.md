@@ -145,11 +145,13 @@ public abstract class IntentService extends Service {
 
 #### IntentService与Service的区别
 
-
+- Service依赖于应用程序的主线程，所以不宜在Service中编写耗时的逻辑和操作，否则会引起ANR；IntentService创建一个工作线程来处理任务。
+- Service需要主动调用`stopSelf()`来结束服务，而IntentService不需要（在所有Intent处理完后，系统会自动关闭服务）。
 
 #### IntentService与其他线程的区别
 
-
+- IntentService内部采用HandlerThread实现，作用类似于后台线程。
+- 与后台线程相比，IntentService是一种后台服务，优势是：优先级高，不易被系统杀死，从而保证任务的执行。（对于后台线程，若进程中没有活动的四大组件，则该线程的优先级非常低，容易被系统杀死，无法保证任务的执行。）
 
 ### 参考链接
 
