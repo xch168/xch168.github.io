@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="辉天神龙" />
+
+
+
+<meta name="description" content="概述 FFmpeg，命令行非常强大。在PC机上，调用一行FFmpeg命令，就可以对视频文件进行剪切、合并、转码等功能。本文将介绍如何在Android中调用FFmpeg命令行。">
+<meta name="keywords" content="Android,FFmpeg,NDK">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在Android项目中调用FFmpeg命令">
+<meta property="og:url" content="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/index.html">
+<meta property="og:site_name" content="辉天神龙">
+<meta property="og:description" content="概述 FFmpeg，命令行非常强大。在PC机上，调用一行FFmpeg命令，就可以对视频文件进行剪切、合并、转码等功能。本文将介绍如何在Android中调用FFmpeg命令行。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/ffmpeg-cmd-dir.png">
+<meta property="og:image" content="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/libffmpeg.so.png">
+<meta property="og:image" content="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/header.png">
+<meta property="og:image" content="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/ffmpeg-source.png">
+<meta property="og:updated_time" content="2018-10-27T01:06:15.647Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="在Android项目中调用FFmpeg命令">
+<meta name="twitter:description" content="概述 FFmpeg，命令行非常强大。在PC机上，调用一行FFmpeg命令，就可以对视频文件进行剪切、合并、转码等功能。本文将介绍如何在Android中调用FFmpeg命令行。">
+<meta name="twitter:image" content="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/ffmpeg-cmd-dir.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternative" href="/atom.xml" title="辉天神龙" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>在Android项目中调用FFmpeg命令 | 辉天神龙</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        open_in_new: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?44ae9c3649f134270ec7e29df4839012";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">辉天神龙</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="true" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/friends/">友链</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android/">Android</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android-Studio/">Android Studio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Annotation/">Annotation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CI/">CI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ClassLoader/">ClassLoader</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Decompile/">Decompile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Patterns/">Design Patterns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/FFmpeg/">FFmpeg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hook/">Hook</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NDK/">NDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Performance/">Performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test/">Test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/">Tools</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/插件化/">插件化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/热修复/">热修复</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">Android攻城狮</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">辉天神龙</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">辉天神龙</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/friends/">友链</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-android-invoke-ffmpeg-cmd" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/10/26/android-invoke-ffmpeg-cmd/" class="article-date">
+      <time datetime="2018-10-26T13:54:00.000Z" itemprop="datePublished">2018-10-26</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      在Android项目中调用FFmpeg命令
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/FFmpeg/">FFmpeg</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NDK/">NDK</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p>FFmpeg，命令行非常强大。在PC机上，调用一行FFmpeg命令，就可以对视频文件进行剪切、合并、转码等功能。本文将介绍如何在Android中调用FFmpeg命令行。</p>
+</blockquote>
+<a id="more"></a>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><blockquote>
+<p>前面已经有两篇文章介绍FFmpeg的编译：</p>
+<ol>
+<li><a href="https://xch168.github.io/2018/07/22/android-ndk-ffmpeg-compile/">Android NDK交叉编译FFmpeg</a></li>
+<li><a href="https://xch168.github.io/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">将FFmpeg编译成一个libffmpeg.so库</a></li>
+</ol>
+</blockquote>
+<h3 id="创建ffmpeg-cmd模块"><a href="#创建ffmpeg-cmd模块" class="headerlink" title="创建ffmpeg-cmd模块"></a>创建ffmpeg-cmd模块</h3><h4 id="Step1：目录结构"><a href="#Step1：目录结构" class="headerlink" title="Step1：目录结构"></a>Step1：目录结构</h4><p><img src="/2018/10/26/android-invoke-ffmpeg-cmd/ffmpeg-cmd-dir.png" alt="ffmpeg-cmd-dir"></p>
+<h4 id="Step2：导入libffmpeg-so库"><a href="#Step2：导入libffmpeg-so库" class="headerlink" title="Step2：导入libffmpeg.so库"></a>Step2：导入libffmpeg.so库</h4><p><img src="/2018/10/26/android-invoke-ffmpeg-cmd/libffmpeg.so.png" alt="libffmpeg.so"></p>
+<p>在<code>ffmpeg-cmd</code>模块的<code>build.gradle</code>中添加配置：</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">android &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 省略其他配置...</span></span><br><span class="line">    defaultConfig &#123;</span><br><span class="line">        <span class="comment">// 省略其他配置...</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 配置cmake构建参数</span></span><br><span class="line">        externalNativeBuild &#123;</span><br><span class="line">            cmake &#123;</span><br><span class="line">                cppFlags <span class="string">""</span></span><br><span class="line">                abiFilters <span class="string">'armeabi-v7a'</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 配置cmake构建脚本的路径</span></span><br><span class="line">    externalNativeBuild &#123;</span><br><span class="line">        cmake &#123;</span><br><span class="line">            path <span class="string">"CMakeLists.txt"</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 定义jniLib的目录到libs</span></span><br><span class="line">    sourceSets.main &#123;</span><br><span class="line">        jniLibs.srcDirs = [<span class="string">'libs'</span>]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Step3：导入FFmpeg的相关头文件"><a href="#Step3：导入FFmpeg的相关头文件" class="headerlink" title="Step3：导入FFmpeg的相关头文件"></a>Step3：导入FFmpeg的相关头文件</h4><p><img src="/2018/10/26/android-invoke-ffmpeg-cmd/header.png" alt="header"></p>
+<h4 id="Step4-导入FFmpeg的相关源码文件"><a href="#Step4-导入FFmpeg的相关源码文件" class="headerlink" title="Step4: 导入FFmpeg的相关源码文件"></a>Step4: 导入FFmpeg的相关源码文件</h4><blockquote>
+<p>在源码目录的<code>fftools</code>文件夹内</p>
+</blockquote>
+<p><img src="/2018/10/26/android-invoke-ffmpeg-cmd/ffmpeg-source.png" alt="ffmpeg-source"></p>
+<h4 id="Step5-编写CMakeLists-txt文件"><a href="#Step5-编写CMakeLists-txt文件" class="headerlink" title="Step5:  编写CMakeLists.txt文件"></a>Step5:  编写CMakeLists.txt文件</h4><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.4</span>.<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_FLAGS <span class="string">"$&#123;CMAKE_CXX_FLAGS&#125; -std=gnu++11"</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加头文件路径</span></span><br><span class="line"><span class="keyword">include_directories</span>(</span><br><span class="line">        ./src/main/cpp</span><br><span class="line">        ./src/main/cpp/ffmpeg</span><br><span class="line">        ./src/main/cpp/<span class="keyword">include</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义源码所在目录</span></span><br><span class="line"><span class="keyword">aux_source_directory</span>(./src/main/cpp SRC)</span><br><span class="line"><span class="keyword">aux_source_directory</span>(./src/main/cpp/ffmpeg SRC_FFMPEG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将 SRC_FFMPEG 添加到 SRC 中</span></span><br><span class="line">list(APPEND SRC <span class="variable">$&#123;SRC_FFMPEG&#125;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置ffmpeg库所在路径的目录</span></span><br><span class="line"><span class="keyword">set</span>(distribution_DIR <span class="variable">$&#123;CMAKE_SOURCE_DIR&#125;</span>/libs/<span class="variable">$&#123;ANDROID_ABI&#125;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译一个ffmpeg-cmd库</span></span><br><span class="line"><span class="keyword">add_library</span>(  ffmpeg-cmd   <span class="comment"># 库名称</span></span><br><span class="line">        SHARED             <span class="comment"># 库类型</span></span><br><span class="line">        <span class="variable">$&#123;SRC&#125;</span>)            <span class="comment"># 编译进库的源码</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加libffmpeg.so库</span></span><br><span class="line"><span class="keyword">add_library</span>( ffmpeg</span><br><span class="line">        SHARED</span><br><span class="line">        IMPORTED )</span><br><span class="line"><span class="comment"># 指定libffmpeg.so库的位置</span></span><br><span class="line"><span class="keyword">set_target_properties</span>( ffmpeg</span><br><span class="line">        PROPERTIES IMPORTED_LOCATION</span><br><span class="line">        <span class="variable">$&#123;distribution_DIR&#125;</span>/libffmpeg.so )</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查找日志库</span></span><br><span class="line"><span class="keyword">find_library</span>(</span><br><span class="line">        log-lib</span><br><span class="line">        log )</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将其他库链接到目标库ffmpeg-cmd</span></span><br><span class="line"><span class="keyword">target_link_libraries</span>( ffmpeg-cmd</span><br><span class="line">        ffmpeg</span><br><span class="line">        -landroid     <span class="comment"># native_window</span></span><br><span class="line">        -ljnigraphics <span class="comment"># bitmap</span></span><br><span class="line">        -lOpenSLES    <span class="comment"># openSLES</span></span><br><span class="line">        <span class="variable">$&#123;log-lib&#125;</span> )</span><br></pre></td></tr></table></figure>
+<h3 id="修改FFmpeg源码"><a href="#修改FFmpeg源码" class="headerlink" title="修改FFmpeg源码"></a>修改FFmpeg源码</h3><ul>
+<li><p>ffmpeg.c</p>
+<p>修改main方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 修改前</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="comment">// 修改后</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ffmpeg_exec</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span></span></span><br></pre></td></tr></table></figure>
+<p>在<code>ffmpeg_cleanup</code>函数执行结束前重新初始化：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">ffmpeg_cleanup</span><span class="params">(<span class="keyword">int</span> ret)</span> </span>&#123;</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 省略其他代码...</span></span><br><span class="line">    </span><br><span class="line">    nb_filtergraphs = <span class="number">0</span>;</span><br><span class="line">    nb_output_files = <span class="number">0</span>;</span><br><span class="line">    nb_output_streams = <span class="number">0</span>;</span><br><span class="line">    nb_input_files = <span class="number">0</span>;</span><br><span class="line">    nb_input_streams = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>print_report</code>函数中添加代码实现FFmpeg命令执行进度的回调：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">print_report</span><span class="params">(<span class="keyword">int</span> is_last_report, <span class="keyword">int64_t</span> timer_start, <span class="keyword">int64_t</span> cur_time)</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 省略其他代码...</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 定义已处理的时长</span></span><br><span class="line">    <span class="keyword">float</span> mss;</span><br><span class="line">    </span><br><span class="line">    secs = FFABS(pts) / AV_TIME_BASE;</span><br><span class="line">    us = FFABS(pts) % AV_TIME_BASE;</span><br><span class="line">    <span class="comment">// 获取已处理的时长</span></span><br><span class="line">    mss = secs + ((<span class="keyword">float</span>) us / AV_TIME_BASE);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 调用ffmpeg_progress将进度传到Java层，代码后面定义</span></span><br><span class="line">    ffmpeg_progress(mss);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 省略其他代码...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>ffmpeg.h</p>
+<p>添加<code>ffmpeg_exec</code>方法的声明：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ffmpeg_exec</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span></span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>cmdutils.c</p>
+<p>修改<code>exit_program</code>函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">exit_program</span><span class="params">(<span class="keyword">int</span> ret)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (program_exit)</span><br><span class="line">        program_exit(ret);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 退出线程(该函数后面定义)</span></span><br><span class="line">    ffmpeg_thread_exit(ret);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 删掉下面这行代码，不然执行结束，应用会crash</span></span><br><span class="line">    <span class="comment">//exit(ret);</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="编写JNI调用FFmpeg命令"><a href="#编写JNI调用FFmpeg命令" class="headerlink" title="编写JNI调用FFmpeg命令"></a>编写JNI调用FFmpeg命令</h3><p><strong>Note</strong>：这部分代码来自开源库 <a href="https://xch168.github.io/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">EpMedia</a></p>
+<h4 id="C代码："><a href="#C代码：" class="headerlink" title="C代码："></a>C代码：</h4><p>ffmpeg_cmd.h</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;jni.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _Included_FFmpeg_Cmd</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _Included_FFmpeg_Cmd</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span> &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">JNIEXPORT jint JNICALL <span class="title">Java_com_github_xch168_ffmpeg_1cmd_FFmpegCmd_exec</span><span class="params">(JNIEnv *, jclass, jint, jobjectArray)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">JNIEXPORT <span class="keyword">void</span> JNICALL <span class="title">Java_com_github_xch168_ffmpeg_1cmd_FFmpegCmd_exit</span><span class="params">(JNIEnv *, jclass)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ffmpeg_progress</span><span class="params">(<span class="keyword">float</span> progress)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>ffmpeg_cmd.c</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ffmpeg_cmd.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;jni.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ffmpeg_thread.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"android_log.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cmdutils.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> JavaVM *jvm = <span class="literal">NULL</span>;</span><br><span class="line"><span class="comment">//java虚拟机</span></span><br><span class="line"><span class="keyword">static</span> jclass m_clazz = <span class="literal">NULL</span>;<span class="comment">//当前类(面向java)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 回调执行Java方法</span></span><br><span class="line"><span class="comment"> * 参看 Jni反射+Java反射</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">callJavaMethod</span><span class="params">(JNIEnv *env, jclass clazz,<span class="keyword">int</span> ret)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (clazz == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        LOGE(<span class="string">"---------------clazz isNULL---------------"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//获取方法ID (I)V指的是方法签名 通过javap -s -public FFmpegCmd 命令生成</span></span><br><span class="line">    jmethodID methodID = (*env)-&gt;GetStaticMethodID(env, clazz, <span class="string">"onExecuted"</span>, <span class="string">"(I)V"</span>);</span><br><span class="line">    <span class="keyword">if</span> (methodID == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        LOGE(<span class="string">"---------------methodID isNULL---------------"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//调用该java方法</span></span><br><span class="line">    (*env)-&gt;CallStaticVoidMethod(env, clazz, methodID,ret);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">callJavaMethodProgress</span><span class="params">(JNIEnv *env, jclass clazz,<span class="keyword">float</span> ret)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (clazz == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        LOGE(<span class="string">"---------------clazz isNULL---------------"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//获取方法ID (I)V指的是方法签名 通过javap -s -public FFmpegCmd 命令生成</span></span><br><span class="line">    jmethodID methodID = (*env)-&gt;GetStaticMethodID(env, clazz, <span class="string">"onProgress"</span>, <span class="string">"(F)V"</span>);</span><br><span class="line">    <span class="keyword">if</span> (methodID == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        LOGE(<span class="string">"---------------methodID isNULL---------------"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//调用该java方法</span></span><br><span class="line">    (*env)-&gt;CallStaticVoidMethod(env, clazz, methodID,ret);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * c语言-线程回调</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">ffmpeg_callback</span><span class="params">(<span class="keyword">int</span> ret)</span> </span>&#123;</span><br><span class="line">    JNIEnv *env;</span><br><span class="line">    <span class="comment">//附加到当前线程从JVM中取出JNIEnv, C/C++从子线程中直接回到Java里的方法时  必须经过这个步骤</span></span><br><span class="line">    (*jvm)-&gt;AttachCurrentThread(jvm, (<span class="keyword">void</span> **) &amp;env, <span class="literal">NULL</span>);</span><br><span class="line">    callJavaMethod(env, m_clazz,ret);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//完毕-脱离当前线程</span></span><br><span class="line">    (*jvm)-&gt;DetachCurrentThread(jvm);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ffmpeg_progress</span><span class="params">(<span class="keyword">float</span> progress)</span> </span>&#123;</span><br><span class="line">    JNIEnv *env;</span><br><span class="line">    (*jvm)-&gt;AttachCurrentThread(jvm, (<span class="keyword">void</span> **) &amp;env, <span class="literal">NULL</span>);</span><br><span class="line">    callJavaMethodProgress(env, m_clazz,progress);</span><br><span class="line">    (*jvm)-&gt;DetachCurrentThread(jvm);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">JNIEXPORT jint JNICALL</span><br><span class="line">Java_com_github_xch168_ffmpeg_1cmd_FFmpegCmd_exec(JNIEnv *env, jclass clazz, jint cmdnum, jobjectArray cmdline) &#123;</span><br><span class="line">    (*env)-&gt;GetJavaVM(env, &amp;jvm);</span><br><span class="line">    m_clazz = (*env)-&gt;NewGlobalRef(env, clazz);</span><br><span class="line">    <span class="comment">//---------------------------------C语言 反射Java 相关----------------------------------------</span></span><br><span class="line">    <span class="comment">//---------------------------------java 数组转C语言数组----------------------------------------</span></span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;<span class="comment">//满足NDK所需的C99标准</span></span><br><span class="line">    <span class="keyword">char</span> **argv = <span class="literal">NULL</span>;<span class="comment">//命令集 二维指针</span></span><br><span class="line">    jstring *strr = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cmdline != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        argv = (<span class="keyword">char</span> **) <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">char</span> *) * cmdnum);</span><br><span class="line">        strr = (jstring *) <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(jstring) * cmdnum);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; cmdnum; ++i) &#123;<span class="comment">//转换</span></span><br><span class="line">            strr[i] = (jstring)(*env)-&gt;GetObjectArrayElement(env, cmdline, i);</span><br><span class="line">            argv[i] = (<span class="keyword">char</span> *) (*env)-&gt;GetStringUTFChars(env, strr[i], <span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//---------------------------------java 数组转C语言数组----------------------------------------</span></span><br><span class="line">    <span class="comment">//---------------------------------执行FFmpeg命令相关----------------------------------------</span></span><br><span class="line">    <span class="comment">//新建线程 执行ffmpeg 命令</span></span><br><span class="line">    ffmpeg_thread_run_cmd(cmdnum, argv);</span><br><span class="line">    <span class="comment">//注册ffmpeg命令执行完毕时的回调</span></span><br><span class="line">    ffmpeg_thread_callback(ffmpeg_callback);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">free</span>(strr);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">JNIEXPORT <span class="keyword">void</span> JNICALL</span><br><span class="line">Java_com_github_xch168_ffmpeg_1cmd_FFmpegCmd_exit(JNIEnv *env, jclass type) &#123;</span><br><span class="line">    (*env)-&gt;GetJavaVM(env, &amp;jvm);</span><br><span class="line">    m_clazz = (*env)-&gt;NewGlobalRef(env, type);</span><br><span class="line">    ffmpeg_thread_cancel();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>ffmpeg_thread.h</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"libavcodec/avcodec.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"libavformat/avformat.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"libswscale/swscale.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ffmpeg.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ffmpeg_thread_run_cmd</span><span class="params">(<span class="keyword">int</span> cmdnum,<span class="keyword">char</span> **argv)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ffmpeg_thread_exit</span><span class="params">(<span class="keyword">int</span> ret)</span></span>;</span><br><span class="line"></span><br><span class="line">void ffmpeg_thread_callback(void (*cb)(int ret));</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ffmpeg_thread_cancel</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<p>ffmpeg_thread.c</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"libavcodec/avcodec.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ffmpeg_thread.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"android_log.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pthread_t</span> ntid;</span><br><span class="line"><span class="keyword">char</span> **argvs = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">int</span> num=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">thread</span><span class="params">(<span class="keyword">void</span> *arg)</span> </span>&#123;   <span class="comment">//执行</span></span><br><span class="line">    <span class="keyword">int</span> result = ffmpeg_exec(num, argvs);</span><br><span class="line">    ffmpeg_thread_exit(result);</span><br><span class="line">    <span class="keyword">return</span> ((<span class="keyword">void</span> *)<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 新建子线程执行ffmpeg命令</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ffmpeg_thread_run_cmd</span><span class="params">(<span class="keyword">int</span> cmdnum,<span class="keyword">char</span> **argv)</span> </span>&#123;</span><br><span class="line">    num=cmdnum;</span><br><span class="line">    argvs=argv;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> temp =pthread_create(&amp;ntid,<span class="literal">NULL</span>,thread,<span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span>(temp!=<span class="number">0</span>) &#123;</span><br><span class="line">        LOGE(<span class="string">"can't create thread: %s "</span>,strerror(temp));</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    LOGI(<span class="string">"create thread succes: %s "</span>,strerror(temp));</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">void</span> <span class="params">(*ffmpeg_callback)</span><span class="params">(<span class="keyword">int</span> ret)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 注册线程回调</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">void ffmpeg_thread_callback(void (*cb)(int ret)) &#123;</span><br><span class="line">    ffmpeg_callback = cb;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 退出线程</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ffmpeg_thread_exit</span><span class="params">(<span class="keyword">int</span> ret)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (ffmpeg_callback) &#123;</span><br><span class="line">        ffmpeg_callback(ret);</span><br><span class="line">    &#125;</span><br><span class="line">    pthread_exit(<span class="string">"ffmpeg_thread_exit"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 取消线程</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ffmpeg_thread_cancel</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">void</span> *ret=<span class="literal">NULL</span>;</span><br><span class="line">    pthread_join(ntid, &amp;ret);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Java代码："><a href="#Java代码：" class="headerlink" title="Java代码："></a>Java代码：</h4><p>FFmpegCmd.java</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FFmpegCmd</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">static</span></span><br><span class="line">    &#123;</span><br><span class="line">        System.loadLibrary(<span class="string">"ffmpeg-cmd"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> OnCmdExecListener sOnCmdExecListener;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">long</span> sDuration;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">native</span> <span class="keyword">int</span> <span class="title">exec</span><span class="params">(<span class="keyword">int</span> argc, String[] argv)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">exit</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">exec</span><span class="params">(String[] cmds, <span class="keyword">long</span> duration, OnCmdExecListener listener)</span> </span>&#123;</span><br><span class="line">        sOnCmdExecListener = listener;</span><br><span class="line">        sDuration = duration;</span><br><span class="line"></span><br><span class="line">        exec(cmds.length, cmds);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * FFmpeg执行结束回调，由C代码中调用</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">onExecuted</span><span class="params">(<span class="keyword">int</span> ret)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (sOnCmdExecListener != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (ret == <span class="number">0</span>) &#123;</span><br><span class="line">                sOnCmdExecListener.onProgress(sDuration);</span><br><span class="line">                sOnCmdExecListener.onSuccess();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                sOnCmdExecListener.onFailure();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * FFmpeg执行进度回调，由C代码调用</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">onProgress</span><span class="params">(<span class="keyword">float</span> progress)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (sOnCmdExecListener != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (sDuration != <span class="number">0</span>) &#123;</span><br><span class="line">                sOnCmdExecListener.onProgress(progress / (sDuration / <span class="number">1000</span>) * <span class="number">0.95f</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">OnCmdExecListener</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">onSuccess</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">onFailure</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">onProgress</span><span class="params">(<span class="keyword">float</span> progress)</span></span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>FFmpegUtil.java</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 封装FFmpeg命令的调用</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FFmpegUtil</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String TAG = <span class="string">"FFmpegUtil"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">execCmd</span><span class="params">(CmdList cmd, <span class="keyword">long</span> duration, <span class="keyword">final</span> OnVideoProcessListener listener)</span> </span>&#123;</span><br><span class="line">        String[] cmds = cmd.toArray(<span class="keyword">new</span> String[cmd.size()]);</span><br><span class="line">        Log.i(TAG, <span class="string">"cmd:"</span> + cmd);</span><br><span class="line">        listener.onProcessStart();</span><br><span class="line">        FFmpegCmd.exec(cmds, duration, <span class="keyword">new</span> FFmpegCmd.OnCmdExecListener() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSuccess</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                listener.onProcessSuccess();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onFailure</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                listener.onProcessFailure();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onProgress</span><span class="params">(<span class="keyword">float</span> progress)</span> </span>&#123;</span><br><span class="line">                listener.onProcessProgress(progress);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>CmdList.java</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CmdList</span> <span class="keyword">extends</span> <span class="title">ArrayList</span>&lt;<span class="title">String</span>&gt; </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> CmdList <span class="title">append</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.add(s);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CmdList <span class="title">append</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.add(i + <span class="string">""</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CmdList <span class="title">append</span><span class="params">(<span class="keyword">float</span> f)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.add(f + <span class="string">""</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CmdList <span class="title">append</span><span class="params">(StringBuilder sb)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.add(sb.toString());</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CmdList <span class="title">append</span><span class="params">(String[] ss)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (String s:ss) &#123;</span><br><span class="line">            <span class="keyword">if</span>(!s.replace(<span class="string">" "</span>,<span class="string">""</span>).equals(<span class="string">""</span>)) &#123;</span><br><span class="line">                <span class="keyword">this</span>.add(s);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">for</span> (String s : <span class="keyword">this</span>) &#123;</span><br><span class="line">            sb.append(<span class="string">" "</span>).append(s);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sb.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="调用FFmpeg命令"><a href="#调用FFmpeg命令" class="headerlink" title="调用FFmpeg命令"></a>调用FFmpeg命令</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">long</span> duration = endTime - startTime;</span><br><span class="line"><span class="comment">// 构建一条视频裁剪命令</span></span><br><span class="line">CmdList cmd = <span class="keyword">new</span> CmdList();</span><br><span class="line">cmd.append(<span class="string">"ffmpeg"</span>);</span><br><span class="line">cmd.append(<span class="string">"-y"</span>);</span><br><span class="line">cmd.append(<span class="string">"-ss"</span>).append(startTime/ <span class="number">1000</span>).append(<span class="string">"-t"</span>).append(duration / <span class="number">1000</span>).append(<span class="string">"-accurate_seek"</span>);</span><br><span class="line">cmd.append(<span class="string">"-i"</span>).append(srcFile);</span><br><span class="line">cmd.append(<span class="string">"-codec"</span>).append(<span class="string">"copy"</span>).append(destFile);</span><br><span class="line"></span><br><span class="line">FFmpegUtil.execCmd(cmd, duration, <span class="keyword">new</span> OnVideoProcessListener() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onProcessStart</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onProcessProgress</span><span class="params">(<span class="keyword">float</span> progress)</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onProcessSuccess</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onProcessFailure</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>源码地址：<a href="https://github.com/xch168/VideoEditor" target="_blank" rel="noopener">https://github.com/xch168/VideoEditor</a></p>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
+<li><a href="https://www.jianshu.com/p/3479bba0cf28" target="_blank" rel="noopener"> 将FFmpeg移植到Android平台</a></li>
+<li><a href="https://github.com/yangjie10930/EpMedia" target="_blank" rel="noopener">EpMedia</a></li>
+<li><a href="https://github.com/xufuji456/FFmpegAndroid" target="_blank" rel="noopener">FFmpegAndroid</a></li>
+</ol>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/10/26/android-invoke-ffmpeg-cmd/">在Android项目中调用FFmpeg命令</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
+        <p><span>发布时间:</span>2018-10-26, 21:54:00</p>
+        <p><span>最后更新:</span>2018-10-27, 09:06:15</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/10/26/android-invoke-ffmpeg-cmd/" title="在Android项目中调用FFmpeg命令">https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/</a>
+            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2018/11/02/android-ffmpeg-logcat/">
+                    在Android logcat中打印FFmpeg调试信息
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2018/10/13/Efficient-loading-bitmap/">
+                    高效地加载Bitmap
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#编译"><span class="toc-number">2.</span> <span class="toc-text">编译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#创建ffmpeg-cmd模块"><span class="toc-number">3.</span> <span class="toc-text">创建ffmpeg-cmd模块</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Step1：目录结构"><span class="toc-number">3.1.</span> <span class="toc-text">Step1：目录结构</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Step2：导入libffmpeg-so库"><span class="toc-number">3.2.</span> <span class="toc-text">Step2：导入libffmpeg.so库</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Step3：导入FFmpeg的相关头文件"><span class="toc-number">3.3.</span> <span class="toc-text">Step3：导入FFmpeg的相关头文件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Step4-导入FFmpeg的相关源码文件"><span class="toc-number">3.4.</span> <span class="toc-text">Step4: 导入FFmpeg的相关源码文件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Step5-编写CMakeLists-txt文件"><span class="toc-number">3.5.</span> <span class="toc-text">Step5:  编写CMakeLists.txt文件</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#修改FFmpeg源码"><span class="toc-number">4.</span> <span class="toc-text">修改FFmpeg源码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#编写JNI调用FFmpeg命令"><span class="toc-number">5.</span> <span class="toc-text">编写JNI调用FFmpeg命令</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#C代码："><span class="toc-number">5.1.</span> <span class="toc-text">C代码：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Java代码："><span class="toc-number">5.2.</span> <span class="toc-text">Java代码：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#调用FFmpeg命令"><span class="toc-number">6.</span> <span class="toc-text">调用FFmpeg命令</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">7.</span> <span class="toc-text">参考链接</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn,
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+<script>
+    yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+</script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"在Android项目中调用FFmpeg命令　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2018/10/26/android-invoke-ffmpeg-cmd/" data-title="在Android项目中调用FFmpeg命令" data-url="https://xch168.github.io/2018/10/26/android-invoke-ffmpeg-cmd/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"xch168"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2018/11/02/android-ffmpeg-logcat/" title="上一篇: 在Android logcat中打印FFmpeg调试信息">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2018/10/13/Efficient-loading-bitmap/" title="下一篇: 高效地加载Bitmap">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2019/04/02/IntentService-analysis/">IntentService解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/19/HandlerThread-analysis/">HandlerThread解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/18/BlockCanary-analysis/">BlockCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/16/android-handler/">Android消息机制——Handler</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/09/android-anr-analysis/">Android应用ANR分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/24/android-oom-analysis/">Android OOM分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/22/leakcanary-principle-analysis/">LeakCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/31/android-memory-leak-analysis/">Android内存泄漏分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/28/android-hotfix-principle-analysis/">Android热修复原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/27/android-plugin-principle-analysis/">Android插件化原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/08/android-hook/">Hook技术</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/android-classloader/">ClassLoader解析（二）：Android中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/java-classloader/">ClassLoader解析（一）：Java中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/29/android-findbugs-plugin-usage/">使用FindBugs插件检查Android代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/15/android-travis-ci/">基于Travis CI的Android项目自动构建流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/10/use-checkstyle-for-better-code-style/">使用Checkstyle规范代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/01/java-transient/">Java中的transient关键字</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/30/android-parcelable-serializable/">Android中的序列化：Parcelable和Serializable</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/23/android-6-0-permission/">Android6.0运行时权限处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/10/Android-Studio-custom-code-template/">在Android Studio中自定义代码模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/08/RecyclerView-best-practices/">RecyclerView性能优化</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/02/android-ffmpeg-logcat/">在Android logcat中打印FFmpeg调试信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/26/android-invoke-ffmpeg-cmd/">在Android项目中调用FFmpeg命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/13/Efficient-loading-bitmap/">高效地加载Bitmap</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/27/android-apk-shelling/">Android APK脱壳--腾讯乐固、360加固一键脱壳</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/DiskLruCache-analyze/">DiskLruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/LruCache-analyze/">LruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-crash-handler/">Android全局异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-size-unit/">Android中的单位(dp、sp、dpi)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/ConstraintLayout-usage/">ConstraintLayout(约束布局)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/26/java-annotation-processor/">Java注解处理器</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/25/java-annotation/">Java注解Annotation</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/18/java-dynamic-proxy/">Java动态代理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">将FFmpeg编译成一个libffmpeg.so库</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-ffmpeg-compile/">Android NDK交叉编译FFmpeg</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-apk-incremental-update/">Android NDK开发-APK增量更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-exception-handle/">Android NDK开发-异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/15/android-ndk-lldb-debug/">Android NDK开发-LLDB调试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/04/android-ndk-cmake/">Android NDK开发-CMake</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/01/android-ndk-environment/">Android NDK开发-环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/17/use-lint-analyse-code/">使用Lint进行静态代码分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/09/android-tools-attributes-use/">Android中tools属性的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/28/clip-children/">Android中一个很有用的属性——clipChildren</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/20/apktool-dex2jar-jd/">Android反编译：Apktool、dex2jar、JD-GUI的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/13/android-garble-proguard/">Android代码混淆——Proguard</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/06/uiautomator-use/">使用UI Automator实现Android UI的自动化测试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/21/adb-commands/">adb常用命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/08/skill-for-advanced-android-development-engineers/">高级Android开发工程师必备技能</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/23/use-bintray-release-publish-lib-to-jcenter/">使用bintray-release快速发布库到JCenter</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/05/android-performance-patterns/">Android性能优化典范</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2019 辉天神龙
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >本站到访数: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">本页阅读量: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

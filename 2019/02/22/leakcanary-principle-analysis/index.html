@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="辉天神龙" />
+
+
+
+<meta name="description" content="概述 LeakCanary是一个开源的内存泄漏检测库，极大简化了内存泄漏的检测流程。了解其工作原理，有助于我们更好的理解Android的内存管理机制。">
+<meta name="keywords" content="Android,Tools">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LeakCanary原理分析">
+<meta property="og:url" content="https://xch168.github.io/2019/02/22/leakcanary-principle-analysis/index.html">
+<meta property="og:site_name" content="辉天神龙">
+<meta property="og:description" content="概述 LeakCanary是一个开源的内存泄漏检测库，极大简化了内存泄漏的检测流程。了解其工作原理，有助于我们更好的理解Android的内存管理机制。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://xch168.github.io/2019/02/22/leakcanary-principle-analysis/LeakCanary-workflow.jpg">
+<meta property="og:updated_time" content="2019-02-22T12:13:23.816Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="LeakCanary原理分析">
+<meta name="twitter:description" content="概述 LeakCanary是一个开源的内存泄漏检测库，极大简化了内存泄漏的检测流程。了解其工作原理，有助于我们更好的理解Android的内存管理机制。">
+<meta name="twitter:image" content="https://xch168.github.io/2019/02/22/leakcanary-principle-analysis/LeakCanary-workflow.jpg">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternative" href="/atom.xml" title="辉天神龙" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>LeakCanary原理分析 | 辉天神龙</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        open_in_new: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?44ae9c3649f134270ec7e29df4839012";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">辉天神龙</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="true" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/friends/">友链</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android/">Android</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android-Studio/">Android Studio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Annotation/">Annotation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CI/">CI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ClassLoader/">ClassLoader</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Decompile/">Decompile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Patterns/">Design Patterns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/FFmpeg/">FFmpeg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hook/">Hook</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NDK/">NDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Performance/">Performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test/">Test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/">Tools</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/插件化/">插件化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/热修复/">热修复</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">Android攻城狮</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">辉天神龙</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">辉天神龙</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/friends/">友链</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-leakcanary-principle-analysis" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2019/02/22/leakcanary-principle-analysis/" class="article-date">
+      <time datetime="2019-02-22T12:01:19.000Z" itemprop="datePublished">2019-02-22</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      LeakCanary原理分析
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Tools/">Tools</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p><a href="https://github.com/square/leakcanary" target="_blank" rel="noopener">LeakCanary</a>是一个开源的内存泄漏检测库，极大简化了内存泄漏的检测流程。了解其工作原理，有助于我们更好的理解Android的内存管理机制。</p>
+</blockquote>
+<a id="more"></a>
+<h3 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h3><p>在<code>build.gradle</code>中添加配置：</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">dependencies &#123;</span><br><span class="line">  debugImplementation <span class="string">'com.squareup.leakcanary:leakcanary-android:1.6.3'</span></span><br><span class="line">  releaseImplementation <span class="string">'com.squareup.leakcanary:leakcanary-android-no-op:1.6.3'</span></span><br><span class="line">  <span class="comment">// Optional, if you use support library fragments:</span></span><br><span class="line">  debugImplementation <span class="string">'com.squareup.leakcanary:leakcanary-support-fragment:1.6.3'</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>Application</code>类中添加代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ExampleApplication</span> <span class="keyword">extends</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (LeakCanary.isInAnalyzerProcess(<span class="keyword">this</span>)) &#123;</span><br><span class="line">            <span class="comment">// This process is dedicated to LeakCanary for heap analysis.</span></span><br><span class="line">            <span class="comment">// You should not init your app in this process.</span></span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        LeakCanary.install(<span class="keyword">this</span>);</span><br><span class="line">        <span class="comment">// Normal app init code...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用RefWatcher观察那些本该被GC回收掉的对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">RefWatcher refWatcher = LeakCanary.installedRefWatcher();</span><br><span class="line"></span><br><span class="line"><span class="comment">// We expect schrodingerCat to be gone soon (or not), let's watch it.</span></span><br><span class="line">refWatcher.watch(schrodingerCat);</span><br></pre></td></tr></table></figure>
+<h3 id="工作机制"><a href="#工作机制" class="headerlink" title="工作机制"></a>工作机制</h3><blockquote>
+<ol>
+<li><code>RefWatcher.watch()</code>创建一个<code>KeyedWeakReference</code>到要被监控的对象。</li>
+<li>然后在后台线程检查引用是否被清除，如果没有，调用GC。</li>
+<li>如果引用还是未被清除，把heap内存dump到APP对应的文件系统中的一个<code>.hprof</code>文件中。</li>
+<li>在另一个进程中的<code>HeapAnalyzerService</code>有一个<code>HeapAnalyzer</code>使用<a href="https://github.com/square/haha" target="_blank" rel="noopener">HAHA</a>解析这个文件。</li>
+<li>在Heap Dump中，<code>HeapAnalyzer</code>根据唯一的reference key找到了<code>KeyedWeakReference</code>，并定位了泄漏的引用。</li>
+<li><code>HeapAnalyzer</code>计算到<code>GC Roots</code>的最短强引用路径，并确定是否泄漏，如果是的话，建立导致泄漏的引用链。</li>
+<li>引用链传递到APP进程中的<code>DisplayLeakService</code>，并以通知的形式展示出来。</li>
+</ol>
+</blockquote>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><h4 id="创建RefWatcher"><a href="#创建RefWatcher" class="headerlink" title="创建RefWatcher"></a>创建RefWatcher</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">LeakCanary</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="meta">@NonNull</span> <span class="function">RefWatcher <span class="title">install</span><span class="params">(@NonNull Application application)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> refWatcher(application) <span class="comment">// 创建AndroidRefWatcherBuilder对象</span></span><br><span class="line">            .listenerServiceClass(DisplayLeakService.class) <span class="comment">// 配置监听分析结果的服务</span></span><br><span class="line">            .excludedRefs(AndroidExcludedRefs.createAppDefaults().build()) <span class="comment">// 配置排除的系统泄露</span></span><br><span class="line">            .buildAndInstall(); <span class="comment">// 创建一个Refwatcher并监听Activity的引用</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>AndroidRefWatcherBuilder#buildAndInstall</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">AndroidRefWatcherBuilder</span> <span class="keyword">extends</span> <span class="title">RefWatcherBuilder</span>&lt;<span class="title">AndroidRefWatcherBuilder</span>&gt; </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="meta">@NonNull</span> <span class="function">RefWatcher <span class="title">buildAndInstall</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (LeakCanaryInternals.installedRefWatcher != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">"buildAndInstall() should only be called once."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 创建RefWatcher对象</span></span><br><span class="line">        RefWatcher refWatcher = build();</span><br><span class="line">        <span class="keyword">if</span> (refWatcher != DISABLED) &#123;</span><br><span class="line">            <span class="keyword">if</span> (enableDisplayLeakActivity) &#123;</span><br><span class="line">                LeakCanaryInternals.setEnabledAsync(context, DisplayLeakActivity.class, <span class="keyword">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (watchActivities) &#123;</span><br><span class="line">                <span class="comment">// 监听Activity的引用</span></span><br><span class="line">                ActivityRefWatcher.install(context, refWatcher);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (watchFragments) &#123;</span><br><span class="line">               	<span class="comment">// 监听Fragment的引用</span></span><br><span class="line">                FragmentRefWatcher.Helper.install(context, refWatcher);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        LeakCanaryInternals.installedRefWatcher = refWatcher;</span><br><span class="line">        <span class="keyword">return</span> refWatcher;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="监听Activity的引用"><a href="#监听Activity的引用" class="headerlink" title="监听Activity的引用"></a>监听Activity的引用</h4><p><strong>ActivityRefWatcher</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ActivityRefWatcher</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">install</span><span class="params">(@NonNull Context context, @NonNull RefWatcher refWatcher)</span> </span>&#123;</span><br><span class="line">        Application application = (Application) context.getApplicationContext();</span><br><span class="line">        ActivityRefWatcher activityRefWatcher = <span class="keyword">new</span> ActivityRefWatcher(application, refWatcher);</span><br><span class="line"></span><br><span class="line">        application.registerActivityLifecycleCallbacks(activityRefWatcher.lifecycleCallbacks);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Application.ActivityLifecycleCallbacks lifecycleCallbacks = <span class="keyword">new</span> ActivityLifecycleCallbacksAdapter() &#123;</span><br><span class="line">        </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onActivityDestroyed</span><span class="params">(Activity activity)</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 在Activity执行完onDestroyed方法时，调用RefWatcher的watch来监控该Activity是否泄露</span></span><br><span class="line">            refWatcher.watch(activity);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="检查引用"><a href="#检查引用" class="headerlink" title="检查引用"></a>检查引用</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">RefWatcher</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> RefWatcher DISABLED = <span class="keyword">new</span> RefWatcherBuilder&lt;&gt;().build();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 线程控制器，在 onDestroy() 之后并且主线程空闲时执行内存泄漏检测</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> WatchExecutor watchExecutor;</span><br><span class="line">    <span class="comment">// 判断是否处于调试模式，调试模式中不会进行内存泄漏检测，因为在调试过程中可能会保留上一个引用从而导致错误信息上报。</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> DebuggerControl debuggerControl;</span><br><span class="line">    <span class="comment">// 用于主动触发GC操作</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> GcTrigger gcTrigger;</span><br><span class="line">    <span class="comment">// 堆信息转储者，dump 内存泄漏处的 heap 信息到 hprof 文件</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HeapDumper heapDumper;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HeapDump.Listener heapdumpListener;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HeapDump.Builder heapDumpBuilder;</span><br><span class="line">    <span class="comment">// 保存每个被检测对象所对应的唯一key</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Set&lt;String&gt; retainedKeys;</span><br><span class="line">    <span class="comment">// 引用队列，和WeakReference配合使用，当弱引用所引用的对象被GC回收，该弱引用就会被加入到这个队列</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReferenceQueue&lt;Object&gt; queue;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">watch</span><span class="params">(Object watchedReference)</span> </span>&#123;</span><br><span class="line">        watch(watchedReference, <span class="string">""</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">watch</span><span class="params">(Object watchedReference, String referenceName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span> == DISABLED) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        checkNotNull(watchedReference, <span class="string">"watchedReference"</span>);</span><br><span class="line">        checkNotNull(referenceName, <span class="string">"referenceName"</span>);</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">long</span> watchStartNanoTime = System.nanoTime();</span><br><span class="line">        <span class="comment">// 为被检测对象生成唯一的key值，并保存到retainedKeys</span></span><br><span class="line">        String key = UUID.randomUUID().toString();</span><br><span class="line">        retainedKeys.add(key);</span><br><span class="line">        <span class="comment">// 创建被检测对象的弱引用，并传入该对象的key</span></span><br><span class="line">        <span class="keyword">final</span> KeyedWeakReference reference = <span class="keyword">new</span> KeyedWeakReference(watchedReference, key, referenceName, queue);</span><br><span class="line">		</span><br><span class="line">        <span class="comment">// 异步检测这个对象是否被回收</span></span><br><span class="line">        ensureGoneAsync(watchStartNanoTime, reference);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">ensureGoneAsync</span><span class="params">(<span class="keyword">final</span> <span class="keyword">long</span> watchStartNanoTime, <span class="keyword">final</span> KeyedWeakReference reference)</span> </span>&#123;</span><br><span class="line">        watchExecutor.execute(<span class="keyword">new</span> Retryable() &#123;</span><br><span class="line">            <span class="meta">@Override</span> <span class="keyword">public</span> Retryable.<span class="function">Result <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> ensureGone(reference, watchStartNanoTime);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@SuppressWarnings</span>(<span class="string">"ReferenceEquality"</span>) <span class="comment">// Explicitly checking for named null.</span></span><br><span class="line">    Retryable.<span class="function">Result <span class="title">ensureGone</span><span class="params">(<span class="keyword">final</span> KeyedWeakReference reference, <span class="keyword">final</span> <span class="keyword">long</span> watchStartNanoTime)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> gcStartNanoTime = System.nanoTime();</span><br><span class="line">        <span class="keyword">long</span> watchDurationMs = NANOSECONDS.toMillis(gcStartNanoTime - watchStartNanoTime);</span><br><span class="line">		</span><br><span class="line">        <span class="comment">// 移除对象已经被回收的弱引用</span></span><br><span class="line">        removeWeaklyReachableReferences();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 调试模式检测不准确</span></span><br><span class="line">        <span class="keyword">if</span> (debuggerControl.isDebuggerAttached()) &#123;</span><br><span class="line">            <span class="comment">// The debugger can create false leaks.</span></span><br><span class="line">            <span class="keyword">return</span> RETRY;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 判断引用是否存在，不存在，表示被对象被回收</span></span><br><span class="line">        <span class="keyword">if</span> (gone(reference)) &#123;</span><br><span class="line">            <span class="keyword">return</span> DONE;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 触发GC</span></span><br><span class="line">        gcTrigger.runGc();</span><br><span class="line">        <span class="comment">// GC后再移除对象已经被回收的弱引用</span></span><br><span class="line">        removeWeaklyReachableReferences();</span><br><span class="line">        <span class="comment">// 如果该引用还存在，就表示对象已经泄露</span></span><br><span class="line">        <span class="keyword">if</span> (!gone(reference)) &#123;</span><br><span class="line">            <span class="keyword">long</span> startDumpHeap = System.nanoTime();</span><br><span class="line">            <span class="keyword">long</span> gcDurationMs = NANOSECONDS.toMillis(startDumpHeap - gcStartNanoTime);</span><br><span class="line">			</span><br><span class="line">            <span class="comment">// dump出heap的内存快照</span></span><br><span class="line">            File heapDumpFile = heapDumper.dumpHeap();</span><br><span class="line">            <span class="keyword">if</span> (heapDumpFile == RETRY_LATER) &#123;</span><br><span class="line">                <span class="comment">// Could not dump the heap.</span></span><br><span class="line">                <span class="keyword">return</span> RETRY;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">long</span> heapDumpDurationMs = NANOSECONDS.toMillis(System.nanoTime() - startDumpHeap);</span><br><span class="line">			<span class="comment">// 构建HeapDump对象</span></span><br><span class="line">            HeapDump heapDump = heapDumpBuilder.heapDumpFile(heapDumpFile).referenceKey(reference.key)</span><br><span class="line">                                               .referenceName(reference.name)</span><br><span class="line">                                               .watchDurationMs(watchDurationMs)</span><br><span class="line">                                               .gcDurationMs(gcDurationMs)</span><br><span class="line">                                               .heapDumpDurationMs(heapDumpDurationMs)</span><br><span class="line">                                               .build();</span><br><span class="line">			<span class="comment">// 分析HeapDump对象</span></span><br><span class="line">            heapdumpListener.analyze(heapDump);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> DONE;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">gone</span><span class="params">(KeyedWeakReference reference)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> !retainedKeys.contains(reference.key);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">removeWeaklyReachableReferences</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        KeyedWeakReference ref;</span><br><span class="line">        <span class="comment">// 当弱引用所引用的对象被回收，就会把该引用放到queue中，所以可以通过queue来判断对象是否被回收</span></span><br><span class="line">        <span class="keyword">while</span> ((ref = (KeyedWeakReference) queue.poll()) != <span class="keyword">null</span>) &#123;</span><br><span class="line">            retainedKeys.remove(ref.key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Dump-Heap"><a href="#Dump-Heap" class="headerlink" title="Dump Heap"></a>Dump Heap</h4><blockquote>
+<p>AndroidHeapDumper是HeapDumper的实现类。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">AndroidHeapDumper</span> <span class="keyword">implements</span> <span class="title">HeapDumper</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span> <span class="meta">@Nullable</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> File <span class="title">dumpHeap</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        File heapDumpFile = leakDirectoryProvider.newHeapDumpFile();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (heapDumpFile == RETRY_LATER) &#123;</span><br><span class="line">            <span class="keyword">return</span> RETRY_LATER;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 生成.hprof文件</span></span><br><span class="line">            Debug.dumpHprofData(heapDumpFile.getAbsolutePath());</span><br><span class="line">            cancelToast(toast);</span><br><span class="line">            notificationManager.cancel(notificationId);</span><br><span class="line">            <span class="keyword">return</span> heapDumpFile;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            CanaryLog.d(e, <span class="string">"Could not dump heap"</span>);</span><br><span class="line">            <span class="comment">// Abort heap dump</span></span><br><span class="line">            <span class="keyword">return</span> RETRY_LATER;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="解析hprof"><a href="#解析hprof" class="headerlink" title="解析hprof"></a>解析hprof</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ServiceHeapDumpListener</span> <span class="keyword">implements</span> <span class="title">HeapDump</span>.<span class="title">Listener</span> </span>&#123;</span><br><span class="line"> 	<span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">analyze</span><span class="params">(@NonNull HeapDump heapDump)</span> </span>&#123;</span><br><span class="line">        checkNotNull(heapDump, <span class="string">"heapDump"</span>);</span><br><span class="line">        <span class="comment">// 启动HeapAnalyzerServiceService来分析heapDump</span></span><br><span class="line">        HeapAnalyzerService.runAnalysis(context, heapDump, listenerServiceClass);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapAnalyzerService</span> <span class="keyword">extends</span> <span class="title">ForegroundService</span> <span class="keyword">implements</span> <span class="title">AnalyzerProgressListener</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">runAnalysis</span><span class="params">(Context context, HeapDump heapDump,  Class&lt;? extends AbstractAnalysisResultService&gt; listenerServiceClass)</span> </span>&#123;</span><br><span class="line">        setEnabledBlocking(context, HeapAnalyzerService.class, <span class="keyword">true</span>);</span><br><span class="line">        setEnabledBlocking(context, listenerServiceClass, <span class="keyword">true</span>);</span><br><span class="line">        Intent intent = <span class="keyword">new</span> Intent(context, HeapAnalyzerService.class);</span><br><span class="line">        intent.putExtra(LISTENER_CLASS_EXTRA, listenerServiceClass.getName());</span><br><span class="line">        intent.putExtra(HEAPDUMP_EXTRA, heapDump);</span><br><span class="line">        ContextCompat.startForegroundService(context, intent);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onHandleIntentInForeground</span><span class="params">(@Nullable Intent intent)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (intent == <span class="keyword">null</span>) &#123;</span><br><span class="line">            CanaryLog.d(<span class="string">"HeapAnalyzerService received a null intent, ignoring."</span>);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        String listenerClassName = intent.getStringExtra(LISTENER_CLASS_EXTRA);</span><br><span class="line">        HeapDump heapDump = (HeapDump) intent.getSerializableExtra(HEAPDUMP_EXTRA);</span><br><span class="line"></span><br><span class="line">        HeapAnalyzer heapAnalyzer = <span class="keyword">new</span> HeapAnalyzer(heapDump.excludedRefs, <span class="keyword">this</span>, heapDump.reachabilityInspectorClasses);</span><br><span class="line">		</span><br><span class="line">        <span class="comment">// 分析内存泄露的地方</span></span><br><span class="line">        AnalysisResult result = heapAnalyzer.checkForLeak(heapDump.heapDumpFile, heapDump.referenceKey, heapDump.computeRetainedHeapSize);</span><br><span class="line">        <span class="comment">// 发送内存泄露检测结果的通知</span></span><br><span class="line">        AbstractAnalysisResultService.sendResultToListener(<span class="keyword">this</span>, listenerClassName, heapDump, result);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapAnalyzer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="meta">@NonNull</span> <span class="function">AnalysisResult <span class="title">checkForLeak</span><span class="params">(@NonNull File heapDumpFile, @NonNull String referenceKey, <span class="keyword">boolean</span> computeRetainedSize)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> analysisStartNanoTime = System.nanoTime();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!heapDumpFile.exists()) &#123;</span><br><span class="line">            Exception exception = <span class="keyword">new</span> IllegalArgumentException(<span class="string">"File does not exist: "</span> + heapDumpFile);</span><br><span class="line">            <span class="keyword">return</span> failure(exception, since(analysisStartNanoTime));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            listener.onProgressUpdate(READING_HEAP_DUMP_FILE);</span><br><span class="line">            <span class="comment">// 使用haha库解析.hprof文件</span></span><br><span class="line">            HprofBuffer buffer = <span class="keyword">new</span> MemoryMappedFileBuffer(heapDumpFile);</span><br><span class="line">            HprofParser parser = <span class="keyword">new</span> HprofParser(buffer);</span><br><span class="line">            listener.onProgressUpdate(PARSING_HEAP_DUMP);</span><br><span class="line">           	<span class="comment">// 解析.hprof文件生成对应的快照对象</span></span><br><span class="line">            Snapshot snapshot = parser.parse();</span><br><span class="line">            listener.onProgressUpdate(DEDUPLICATING_GC_ROOTS);</span><br><span class="line">            <span class="comment">// 删除gcRoots中重复的根对象RootObj</span></span><br><span class="line">            deduplicateGcRoots(snapshot);</span><br><span class="line">            listener.onProgressUpdate(FINDING_LEAKING_REF);</span><br><span class="line">            <span class="comment">// 检查对象是否泄露</span></span><br><span class="line">            Instance leakingRef = findLeakingReference(referenceKey, snapshot);</span><br><span class="line">			</span><br><span class="line">            <span class="comment">// leakingRef为空表示对象没有泄露</span></span><br><span class="line">            <span class="keyword">if</span> (leakingRef == <span class="keyword">null</span>) &#123;</span><br><span class="line">                String className = leakingRef.getClassObj().getClassName();</span><br><span class="line">                <span class="keyword">return</span> noLeak(className, since(analysisStartNanoTime));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 查找引用链</span></span><br><span class="line">            <span class="keyword">return</span> findLeakTrace(analysisStartNanoTime, snapshot, leakingRef, computeRetainedSize);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            <span class="keyword">return</span> failure(e, since(analysisStartNanoTime));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="定位泄露的引用"><a href="#定位泄露的引用" class="headerlink" title="定位泄露的引用"></a>定位泄露的引用</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapAnalyzer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> Instance <span class="title">findLeakingReference</span><span class="params">(String key, Snapshot snapshot)</span> </span>&#123;</span><br><span class="line">        ClassObj refClass = snapshot.findClass(KeyedWeakReference.class.getName());</span><br><span class="line">        <span class="keyword">if</span> (refClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">                    <span class="string">"Could not find the "</span> + KeyedWeakReference.class.getName() + <span class="string">" class in the heap dump."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        List&lt;String&gt; keysFound = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (Instance instance : refClass.getInstancesList()) &#123;</span><br><span class="line">            List&lt;ClassInstance.FieldValue&gt; values = classInstanceValues(instance);</span><br><span class="line">            Object keyFieldValue = fieldValue(values, <span class="string">"key"</span>);</span><br><span class="line">            <span class="keyword">if</span> (keyFieldValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">                keysFound.add(<span class="keyword">null</span>);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            String keyCandidate = asString(keyFieldValue);</span><br><span class="line">            <span class="keyword">if</span> (keyCandidate.equals(key)) &#123;</span><br><span class="line">                <span class="keyword">return</span> fieldValue(values, <span class="string">"referent"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            keysFound.add(keyCandidate);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Could not find weak reference with key "</span> + key + <span class="string">" in "</span> + keysFound);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="建立引用链"><a href="#建立引用链" class="headerlink" title="建立引用链"></a>建立引用链</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapAnalyzer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> AnalysisResult <span class="title">findLeakTrace</span><span class="params">(<span class="keyword">long</span> analysisStartNanoTime, Snapshot snapshot, Instance leakingRef, <span class="keyword">boolean</span> computeRetainedSize)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        listener.onProgressUpdate(FINDING_SHORTEST_PATH);</span><br><span class="line">        <span class="comment">// 查找到GC Roots的最短引用路径</span></span><br><span class="line">        ShortestPathFinder pathFinder = <span class="keyword">new</span> ShortestPathFinder(excludedRefs);</span><br><span class="line">        ShortestPathFinder.Result result = pathFinder.findPath(snapshot, leakingRef);</span><br><span class="line"></span><br><span class="line">        String className = leakingRef.getClassObj().getClassName();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// False alarm, no strong reference path to GC Roots.</span></span><br><span class="line">        <span class="keyword">if</span> (result.leakingNode == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> noLeak(className, since(analysisStartNanoTime));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        listener.onProgressUpdate(BUILDING_LEAK_TRACE);</span><br><span class="line">        <span class="comment">// 构建泄露的引用链</span></span><br><span class="line">        LeakTrace leakTrace = buildLeakTrace(result.leakingNode);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> retainedSize;</span><br><span class="line">        <span class="keyword">if</span> (computeRetainedSize) &#123;</span><br><span class="line"></span><br><span class="line">            listener.onProgressUpdate(COMPUTING_DOMINATORS);</span><br><span class="line">            <span class="comment">// 计算内存泄露的大小</span></span><br><span class="line">            snapshot.computeDominators();</span><br><span class="line"></span><br><span class="line">            Instance leakingInstance = result.leakingNode.instance;</span><br><span class="line"></span><br><span class="line">            retainedSize = leakingInstance.getTotalRetainedSize();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// <span class="doctag">TODO:</span> check O sources and see what happened to android.graphics.Bitmap.mBuffer</span></span><br><span class="line">            <span class="keyword">if</span> (SDK_INT &lt;= N_MR1) &#123;</span><br><span class="line">                listener.onProgressUpdate(COMPUTING_BITMAP_SIZE);</span><br><span class="line">                retainedSize += computeIgnoredBitmapRetainedSize(snapshot, leakingInstance);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            retainedSize = AnalysisResult.RETAINED_HEAP_SKIPPED;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> leakDetected(result.excludingKnownLeaks, className, leakTrace, retainedSize, since(analysisStartNanoTime));</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="展示分析结果"><a href="#展示分析结果" class="headerlink" title="展示分析结果"></a>展示分析结果</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DisplayLeakService</span> <span class="keyword">extends</span> <span class="title">AbstractAnalysisResultService</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">onHeapAnalyzed</span><span class="params">(@NonNull AnalyzedHeap analyzedHeap)</span> </span>&#123;</span><br><span class="line">        HeapDump heapDump = analyzedHeap.heapDump;</span><br><span class="line">        AnalysisResult result = analyzedHeap.result;</span><br><span class="line"></span><br><span class="line">        String leakInfo = leakInfo(<span class="keyword">this</span>, heapDump, result, <span class="keyword">true</span>);</span><br><span class="line">        CanaryLog.d(<span class="string">"%s"</span>, leakInfo);</span><br><span class="line"></span><br><span class="line">        heapDump = renameHeapdump(heapDump);</span><br><span class="line">        <span class="keyword">boolean</span> resultSaved = saveResult(heapDump, result);</span><br><span class="line"></span><br><span class="line">        String contentTitle;</span><br><span class="line">        <span class="keyword">if</span> (resultSaved) &#123;</span><br><span class="line">            PendingIntent pendingIntent = DisplayLeakActivity.createPendingIntent(<span class="keyword">this</span>, heapDump.referenceKey);</span><br><span class="line">            <span class="keyword">if</span> (result.failure != <span class="keyword">null</span>) &#123;</span><br><span class="line">                contentTitle = getString(R.string.leak_canary_analysis_failed);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                String className = classSimpleName(result.className);</span><br><span class="line">                <span class="comment">// ...</span></span><br><span class="line">            &#125;</span><br><span class="line">            String contentText = getString(R.string.leak_canary_notification_message);</span><br><span class="line">            showNotification(pendingIntent, contentTitle, contentText);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            onAnalysisResultFailure(getString(R.string.leak_canary_could_not_save_text));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        afterDefaultHandling(heapDump, result, leakInfo);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">onAnalysisResultFailure</span><span class="params">(String failureMessage)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onAnalysisResultFailure(failureMessage);</span><br><span class="line">        String failureTitle = getString(R.string.leak_canary_result_failure_title);</span><br><span class="line">        showNotification(<span class="keyword">null</span>, failureTitle, failureMessage);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><img src="/2019/02/22/leakcanary-principle-analysis/LeakCanary-workflow.jpg" alt="LeakCanary-workflow"></p>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
+<li><a href="https://blog.csdn.net/gdutxiaoxu/article/details/80738581" target="_blank" rel="noopener">带你读懂 Reference 和 ReferenceQueue</a></li>
+<li><a href="https://blog.csdn.net/gdutxiaoxu/article/details/80752876" target="_blank" rel="noopener">一步步拆解 LeakCanary</a></li>
+<li><a href="https://jsonchao.github.io/2019/01/06/Android%E4%B8%BB%E6%B5%81%E4%B8%89%E6%96%B9%E5%BA%93%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E5%85%AD%E3%80%81%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Leakcanary%E6%BA%90%E7%A0%81%EF%BC%89/" target="_blank" rel="noopener">深入理解Leakcanary源码</a></li>
+<li><a href="https://www.liaohuqiu.net/cn/posts/leak-canary-read-me/" target="_blank" rel="noopener">LeakCanary中文使用说明</a></li>
+<li><a href="https://www.liaohuqiu.net/cn/posts/leak-canary/" target="_blank" rel="noopener">LeakCanary:让内存泄漏无所遁形</a></li>
+<li><a href="https://allenwu.itscoder.com/leakcanary-source" target="_blank" rel="noopener">深入理解 Android 之 LeakCanary 源码解析</a></li>
+<li><a href="https://github.com/square/leakcanary/wiki/Customizing-LeakCanary" target="_blank" rel="noopener">Customizing LeakCanary</a></li>
+</ol>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2019/02/22/leakcanary-principle-analysis/">LeakCanary原理分析</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
+        <p><span>发布时间:</span>2019-02-22, 20:01:19</p>
+        <p><span>最后更新:</span>2019-02-22, 20:13:23</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2019/02/22/leakcanary-principle-analysis/" title="LeakCanary原理分析">https://xch168.github.io/2019/02/22/leakcanary-principle-analysis/</a>
+            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2019/02/22/leakcanary-principle-analysis/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2019/02/24/android-oom-analysis/">
+                    Android OOM分析
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2019/01/31/android-memory-leak-analysis/">
+                    Android内存泄漏分析
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用示例"><span class="toc-number">2.</span> <span class="toc-text">使用示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#工作机制"><span class="toc-number">3.</span> <span class="toc-text">工作机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#源码分析"><span class="toc-number">4.</span> <span class="toc-text">源码分析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#创建RefWatcher"><span class="toc-number">4.1.</span> <span class="toc-text">创建RefWatcher</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#监听Activity的引用"><span class="toc-number">4.2.</span> <span class="toc-text">监听Activity的引用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#检查引用"><span class="toc-number">4.3.</span> <span class="toc-text">检查引用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Dump-Heap"><span class="toc-number">4.4.</span> <span class="toc-text">Dump Heap</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#解析hprof"><span class="toc-number">4.5.</span> <span class="toc-text">解析hprof</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#定位泄露的引用"><span class="toc-number">4.6.</span> <span class="toc-text">定位泄露的引用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#建立引用链"><span class="toc-number">4.7.</span> <span class="toc-text">建立引用链</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#展示分析结果"><span class="toc-number">4.8.</span> <span class="toc-text">展示分析结果</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">6.</span> <span class="toc-text">参考链接</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn,
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+<script>
+    yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+</script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"LeakCanary原理分析　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2019/02/22/leakcanary-principle-analysis/" data-title="LeakCanary原理分析" data-url="https://xch168.github.io/2019/02/22/leakcanary-principle-analysis/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"xch168"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2019/02/24/android-oom-analysis/" title="上一篇: Android OOM分析">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2019/01/31/android-memory-leak-analysis/" title="下一篇: Android内存泄漏分析">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2019/04/02/IntentService-analysis/">IntentService解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/19/HandlerThread-analysis/">HandlerThread解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/18/BlockCanary-analysis/">BlockCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/16/android-handler/">Android消息机制——Handler</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/09/android-anr-analysis/">Android应用ANR分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/24/android-oom-analysis/">Android OOM分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/22/leakcanary-principle-analysis/">LeakCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/31/android-memory-leak-analysis/">Android内存泄漏分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/28/android-hotfix-principle-analysis/">Android热修复原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/27/android-plugin-principle-analysis/">Android插件化原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/08/android-hook/">Hook技术</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/android-classloader/">ClassLoader解析（二）：Android中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/java-classloader/">ClassLoader解析（一）：Java中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/29/android-findbugs-plugin-usage/">使用FindBugs插件检查Android代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/15/android-travis-ci/">基于Travis CI的Android项目自动构建流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/10/use-checkstyle-for-better-code-style/">使用Checkstyle规范代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/01/java-transient/">Java中的transient关键字</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/30/android-parcelable-serializable/">Android中的序列化：Parcelable和Serializable</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/23/android-6-0-permission/">Android6.0运行时权限处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/10/Android-Studio-custom-code-template/">在Android Studio中自定义代码模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/08/RecyclerView-best-practices/">RecyclerView性能优化</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/02/android-ffmpeg-logcat/">在Android logcat中打印FFmpeg调试信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/26/android-invoke-ffmpeg-cmd/">在Android项目中调用FFmpeg命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/13/Efficient-loading-bitmap/">高效地加载Bitmap</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/27/android-apk-shelling/">Android APK脱壳--腾讯乐固、360加固一键脱壳</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/DiskLruCache-analyze/">DiskLruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/LruCache-analyze/">LruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-crash-handler/">Android全局异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-size-unit/">Android中的单位(dp、sp、dpi)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/ConstraintLayout-usage/">ConstraintLayout(约束布局)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/26/java-annotation-processor/">Java注解处理器</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/25/java-annotation/">Java注解Annotation</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/18/java-dynamic-proxy/">Java动态代理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">将FFmpeg编译成一个libffmpeg.so库</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-ffmpeg-compile/">Android NDK交叉编译FFmpeg</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-apk-incremental-update/">Android NDK开发-APK增量更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-exception-handle/">Android NDK开发-异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/15/android-ndk-lldb-debug/">Android NDK开发-LLDB调试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/04/android-ndk-cmake/">Android NDK开发-CMake</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/01/android-ndk-environment/">Android NDK开发-环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/17/use-lint-analyse-code/">使用Lint进行静态代码分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/09/android-tools-attributes-use/">Android中tools属性的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/28/clip-children/">Android中一个很有用的属性——clipChildren</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/20/apktool-dex2jar-jd/">Android反编译：Apktool、dex2jar、JD-GUI的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/13/android-garble-proguard/">Android代码混淆——Proguard</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/06/uiautomator-use/">使用UI Automator实现Android UI的自动化测试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/21/adb-commands/">adb常用命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/08/skill-for-advanced-android-development-engineers/">高级Android开发工程师必备技能</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/23/use-bintray-release-publish-lib-to-jcenter/">使用bintray-release快速发布库到JCenter</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/05/android-performance-patterns/">Android性能优化典范</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2019 辉天神龙
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >本站到访数: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">本页阅读量: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

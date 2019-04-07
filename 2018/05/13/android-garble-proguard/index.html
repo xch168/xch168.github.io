@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="辉天神龙" />
+
+
+
+<meta name="description" content="一、概述 ProGuard 会检测和移除封装应用中未使用的类、字段、方法和属性，包括自带代码库中的未使用项（这使其成为以变通方式解决64k 引用限制的有用工具）。ProGuard 还可优化字节码，移除未使用的代码指令，以及用短名称混淆其余的类、字段和方法。混淆过的代码可令您的 APK 难以被逆向工程，这在应用使用许可验证等安全敏感性功能时特别有用。">
+<meta name="keywords" content="Android,Tools">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android代码混淆——Proguard">
+<meta property="og:url" content="https://xch168.github.io/2018/05/13/android-garble-proguard/index.html">
+<meta property="og:site_name" content="辉天神龙">
+<meta property="og:description" content="一、概述 ProGuard 会检测和移除封装应用中未使用的类、字段、方法和属性，包括自带代码库中的未使用项（这使其成为以变通方式解决64k 引用限制的有用工具）。ProGuard 还可优化字节码，移除未使用的代码指令，以及用短名称混淆其余的类、字段和方法。混淆过的代码可令您的 APK 难以被逆向工程，这在应用使用许可验证等安全敏感性功能时特别有用。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://xch168.github.io/2018/05/13/android-garble-proguard/apkanalyze.png">
+<meta property="og:image" content="https://xch168.github.io/2018/05/13/android-garble-proguard/retrace.png">
+<meta property="og:updated_time" content="2018-05-13T23:22:39.240Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android代码混淆——Proguard">
+<meta name="twitter:description" content="一、概述 ProGuard 会检测和移除封装应用中未使用的类、字段、方法和属性，包括自带代码库中的未使用项（这使其成为以变通方式解决64k 引用限制的有用工具）。ProGuard 还可优化字节码，移除未使用的代码指令，以及用短名称混淆其余的类、字段和方法。混淆过的代码可令您的 APK 难以被逆向工程，这在应用使用许可验证等安全敏感性功能时特别有用。">
+<meta name="twitter:image" content="https://xch168.github.io/2018/05/13/android-garble-proguard/apkanalyze.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternative" href="/atom.xml" title="辉天神龙" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Android代码混淆——Proguard | 辉天神龙</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        open_in_new: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?44ae9c3649f134270ec7e29df4839012";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">辉天神龙</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="true" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/friends/">友链</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android/">Android</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android-Studio/">Android Studio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Annotation/">Annotation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CI/">CI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ClassLoader/">ClassLoader</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Decompile/">Decompile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Patterns/">Design Patterns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/FFmpeg/">FFmpeg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hook/">Hook</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NDK/">NDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Performance/">Performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test/">Test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/">Tools</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/插件化/">插件化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/热修复/">热修复</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">Android攻城狮</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">辉天神龙</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">辉天神龙</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/friends/">友链</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-android-garble-proguard" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/05/13/android-garble-proguard/" class="article-date">
+      <time datetime="2018-05-13T11:49:05.000Z" itemprop="datePublished">2018-05-13</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Android代码混淆——Proguard
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Tools/">Tools</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><blockquote>
+<p>ProGuard 会检测和移除封装应用中未使用的类、字段、方法和属性，包括自带代码库中的未使用项（这使其成为以变通方式解决64k 引用限制的有用工具）。ProGuard 还可优化字节码，移除未使用的代码指令，以及用短名称混淆其余的类、字段和方法。混淆过的代码可令您的 APK 难以被逆向工程，这在应用使用许可验证等安全敏感性功能时特别有用。<br><a id="more"></a></p>
+</blockquote>
+<h3 id="二、开启混淆"><a href="#二、开启混淆" class="headerlink" title="二、开启混淆"></a>二、开启混淆</h3><p>在module的<code>build.gradle</code>文件中添加<code>minifyEnabled true</code>。由于代码混淆会导致构建速度变慢，所有不要在调试的构建中使用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">buildTypes &#123;</span><br><span class="line">        release &#123;</span><br><span class="line">            minifyEnabled true</span><br><span class="line">            proguardFiles getDefaultProguardFile(&apos;proguard-android.txt&apos;), &apos;proguard-rules.pro&apos;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>proguard-android.txt</code> :是系统默认的混淆规则配置文件，位置在 <code>&lt;Android SDK目录&gt;/tools/proguard</code>文件夹下。如果想进一步的压缩代码，可以使用位于相同目录下的<code>proguard-android-optimize.txt</code>文件，它还包含其他在字节码一级（方法内和方法间）执行分析的优化，以进一步减小APK大小和帮助提供运行速度。</li>
+<li><code>prguard-rules.pro</code>在每个module中都有一个该文件，用于自定义对应module的ProGuard规则。</li>
+</ul>
+<h3 id="三、混淆规则"><a href="#三、混淆规则" class="headerlink" title="三、混淆规则"></a>三、混淆规则</h3><p>从系统的<code>proguard-android.txt</code>文件来学习混淆规则。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"># This file is no longer maintained and is not used by new (2.2+) versions of the</span><br><span class="line"># Android plugin for Gradle. Instead, the Android plugin for Gradle generates the</span><br><span class="line"># default rules at build time and stores them in the build directory.</span><br><span class="line"># SDK中的该文件已经不再维护，从Gradle2.2+版本后，gradle插件会自动生成这个默认配置文件，位置位于&lt;项目根目录&gt;/build/intermediates/proguard-files</span><br><span class="line"></span><br><span class="line"># 混淆时不使用大小写混合，混淆后的类名为小写</span><br><span class="line">-dontusemixedcaseclassnames</span><br><span class="line"></span><br><span class="line"># 不跳过非公共的库的类</span><br><span class="line">-dontskipnonpubliclibraryclasses</span><br><span class="line"></span><br><span class="line"># 混淆后生成映射文件，map 类名-&gt;转化后类名的映射</span><br><span class="line">-verbose</span><br><span class="line"></span><br><span class="line"># Optimization is turned off by default. Dex does not like code run</span><br><span class="line"># through the ProGuard optimize and preverify steps (and performs some</span><br><span class="line"># of these optimizations on its own).</span><br><span class="line"># 优化默认关闭，Dex不喜欢通过ProGuard的优化和预处理操作</span><br><span class="line">-dontoptimize</span><br><span class="line">-dontpreverify</span><br><span class="line"></span><br><span class="line"># Note that if you want to enable optimization, you cannot just</span><br><span class="line"># include optimization flags in your own project configuration file;</span><br><span class="line"># instead you will need to point to the</span><br><span class="line"># &quot;proguard-android-optimize.txt&quot; file instead of this one from your</span><br><span class="line"># project.properties file.</span><br><span class="line"></span><br><span class="line"># 保护代码中的Annotation不被混淆，这在JSON实体映射非常重要，如GSON</span><br><span class="line">-keepattributes *Annotation*</span><br><span class="line">-keep public class com.google.vending.licensing.ILicensingService</span><br><span class="line">-keep public class com.android.vending.licensing.ILicensingService</span><br><span class="line"></span><br><span class="line"># For native methods, see http://proguard.sourceforge.net/manual/examples.html#native</span><br><span class="line"># 保留所有的地方native方法不被混淆</span><br><span class="line">-keepclasseswithmembernames class * &#123;</span><br><span class="line">    native &lt;methods&gt;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># keep setters in Views so that animations can still work.</span><br><span class="line"># see http://proguard.sourceforge.net/manual/examples.html#beans</span><br><span class="line"># 不混淆View中的setXxx()和getXxx()方法，以保证熟悉动画能正常工作</span><br><span class="line">-keepclassmembers public class * extends android.view.View &#123;</span><br><span class="line">   void set*(***);</span><br><span class="line">   *** get*();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># We want to keep methods in Activity that could be used in the XML attribute onClick</span><br><span class="line"># 不混淆Activity中参数是View的方法，保证xml绑定的点击事件可以正常工作</span><br><span class="line">-keepclassmembers class * extends android.app.Activity &#123;</span><br><span class="line">   public void *(android.view.View);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># For enumeration classes, see http://proguard.sourceforge.net/manual/examples.html#enumerations</span><br><span class="line"># 不混淆枚举类中的value()和valueOf()方法</span><br><span class="line">-keepclassmembers enum * &#123;</span><br><span class="line">    public static **[] values();</span><br><span class="line">    public static ** valueOf(java.lang.String);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 不混淆Parcelable实现类中的CREATOR字段，以保证Parcelable机制正常工作</span><br><span class="line">-keepclassmembers class * implements android.os.Parcelable &#123;</span><br><span class="line">  public static final android.os.Parcelable$Creator CREATOR;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 不混淆R文件中的所有静态字段，以保证正确找到每个资源id</span><br><span class="line">-keepclassmembers class **.R$* &#123;</span><br><span class="line">    public static &lt;fields&gt;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># The support library contains references to newer platform versions.</span><br><span class="line"># Don&apos;t warn about those in case this app is linking against an older</span><br><span class="line"># platform version.  We know about them, and they are safe.</span><br><span class="line"># 不对android.support包下的代码警告。(如果打包的版本低于support包下某些类的使用版本，会出现警告)</span><br><span class="line">-dontwarn android.support.**</span><br><span class="line"></span><br><span class="line"># Understand the @Keep support annotation.</span><br><span class="line"># 不混淆Keep类</span><br><span class="line">-keep class android.support.annotation.Keep</span><br><span class="line"></span><br><span class="line"># 不混淆使用了注解的类和类成员</span><br><span class="line">-keep @android.support.annotation.Keep class * &#123;*;&#125;</span><br><span class="line"></span><br><span class="line"># 如果类中有使用了注解的方法，则不混淆类和类成员</span><br><span class="line">-keepclasseswithmembers class * &#123;</span><br><span class="line">    @android.support.annotation.Keep &lt;methods&gt;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 如果类中有使用了注解的字段，则不混淆类和类成员</span><br><span class="line">-keepclasseswithmembers class * &#123;</span><br><span class="line">    @android.support.annotation.Keep &lt;fields&gt;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 如果类中有使用了注解的构造函数，则不混淆类和类成员</span><br><span class="line">-keepclasseswithmembers class * &#123;</span><br><span class="line">    @android.support.annotation.Keep &lt;init&gt;(...);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="keep类关键字"><a href="#keep类关键字" class="headerlink" title="keep类关键字"></a>keep类关键字</h4><table>
+<thead>
+<tr>
+<th>关键字</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>keep</td>
+<td>保留类和类成员，防止被混淆或移除</td>
+</tr>
+<tr>
+<td>keepnames</td>
+<td>保留类和类成员，防止被混淆，但是没被引用的类成员会被移除</td>
+</tr>
+<tr>
+<td>keepclassmembers</td>
+<td>只保留类成员，防止被混淆或移除</td>
+</tr>
+<tr>
+<td>keepclassmembersnames</td>
+<td>只保留类成员，防止被混淆，但没被引用的类成员会被移除</td>
+</tr>
+<tr>
+<td>keepclasseswithmembers</td>
+<td>保留类和类成员，防止被混淆或移除，如果指定的类成员不存在还是会被混淆</td>
+</tr>
+<tr>
+<td>keepclasseswithmembernames</td>
+<td>保留类和类成员，防止被混淆，如果指定的类成员不存在还是会被混淆，没有被引用的类成员会被移除</td>
+</tr>
+</tbody>
+</table>
+<h4 id="通配符"><a href="#通配符" class="headerlink" title="通配符"></a>通配符</h4><table>
+<thead>
+<tr>
+<th>通配符</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>*</td>
+<td>匹配任意长度字符，但不包含分隔符 “.”。例如一个类com.github.xch168.User，使用com.github.xch168.<em> 是可以匹配，但是com.github.</em> 不能匹配</td>
+</tr>
+<tr>
+<td>**</td>
+<td>匹配任意长度字符，包括分隔符”.”。如使用com.github.**,匹配包下的所有内容，可以匹配到com.github.xch168.User。</td>
+</tr>
+<tr>
+<td>***</td>
+<td>匹配任意参数类型。例如<code>*** getName(***)</code> 可匹配String getName(String)</td>
+</tr>
+<tr>
+<td>…</td>
+<td>匹配任意长度的任意类型参数。例如void setName(…) 可以匹配void setName(String firstName, String secondName)</td>
+</tr>
+<tr>
+<td><code>&lt;fileds&gt;</code></td>
+<td>匹配类、接口中所有字段</td>
+</tr>
+<tr>
+<td><code>&lt;methods&gt;</code></td>
+<td>匹配类、接口中所有方法</td>
+</tr>
+<tr>
+<td><code>&lt;init&gt;</code></td>
+<td>匹配类中所有构造函数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="四、配置自己的混淆"><a href="#四、配置自己的混淆" class="headerlink" title="四、配置自己的混淆"></a>四、配置自己的混淆</h3><ul>
+<li>WebView中使用JS调用，需要添加如下配置：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-keepclassmembers class fqcn.of.javascript.interface.for.webview &#123;</span><br><span class="line">   public *;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>不混淆某个特定的类和类中的所有成员</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-keep class com.github.xch168.utils.CommonUtil &#123; *; &#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>不混淆膜拜目录下的文件，例如使用Gson时，数据bean不能被混淆，需要添加如下配置：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-keep class com.github.xch168.model.** &#123; *; &#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>保留泛型</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-keepattributes Signature</span><br></pre></td></tr></table></figure>
+<ul>
+<li>保留用于调试堆栈跟中的行号信息</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-keepattributes SourceFile,LineNumberTable</span><br></pre></td></tr></table></figure>
+<ul>
+<li>如果使用了上一行配置，还需要添加如下配置将源文件重命名为SourceFile，以便通过鼠标点击直达源文件：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-renamesourcefileattribute SourceFile</span><br></pre></td></tr></table></figure>
+<ul>
+<li>第三方库混淆案例</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># Retrofit</span><br><span class="line"># Retain generic type information for use by reflection by converters and adapters.</span><br><span class="line">-keepattributes Signature</span><br><span class="line"># Retain service method parameters.</span><br><span class="line">-keepclassmembernames,allowobfuscation interface * &#123;</span><br><span class="line">    @retrofit2.http.* &lt;methods&gt;;</span><br><span class="line">&#125;</span><br><span class="line"># Ignore annotation used for build tooling.</span><br><span class="line">-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement</span><br><span class="line"></span><br><span class="line"># Okhttp</span><br><span class="line">-dontwarn okhttp3.**</span><br><span class="line">-dontwarn okio.**</span><br><span class="line">-dontwarn javax.annotation.**</span><br><span class="line">-dontwarn org.conscrypt.**</span><br><span class="line"># A resource is loaded with a relative path so the package of this class must be preserved.</span><br><span class="line">-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase</span><br></pre></td></tr></table></figure>
+<h3 id="五、查看混淆结果"><a href="#五、查看混淆结果" class="headerlink" title="五、查看混淆结果"></a>五、查看混淆结果</h3><p>混淆打包后就会在<code>&lt;module目录&gt;/build/outputs/mapping/release</code>目录生成混淆的相关文件。</p>
+<ul>
+<li><p><code>dump.txt</code></p>
+<p>说明 APK 中所有类文件的内部结构。</p>
+</li>
+<li><p><code>mapping.txt</code></p>
+<p>提供原始与混淆过的类、方法和字段名称之间的转换。</p>
+</li>
+<li><p><code>seeds.txt</code></p>
+<p>列出未进行混淆的类和成员。</p>
+</li>
+<li><p><code>usage.txt</code></p>
+<p>列出从 APK 移除的代码。</p>
+</li>
+</ul>
+<p>混淆后可以用Android Studio的<code>Analyze APK</code>工具对混淆后的apk包进行分析。</p>
+<p><img src="/2018/05/13/android-garble-proguard/apkanalyze.png" alt="apkanalyze"></p>
+<h3 id="六、追溯Crash堆栈信息"><a href="#六、追溯Crash堆栈信息" class="headerlink" title="六、追溯Crash堆栈信息"></a>六、追溯Crash堆栈信息</h3><p>混淆后的代码运行出错的堆栈信息如下，看不到具体的类名</p>
+<figure class="highlight verilog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java<span class="variable">.lang</span><span class="variable">.NullPointerException</span>: Attempt to invoke <span class="keyword">virtual</span> method '<span class="keyword">void</span> android<span class="variable">.widget</span><span class="variable">.TextView</span><span class="variable">.setOnClickListener</span>(android<span class="variable">.view</span><span class="variable">.View</span>$OnClickListener)' on a <span class="literal">null</span> object reference</span><br><span class="line">        at com<span class="variable">.github</span><span class="variable">.xch168</span><span class="variable">.testas32</span><span class="variable">.MainActivity</span><span class="variable">.k</span>(Unknown Source:<span class="number">7</span>)</span><br><span class="line">        at com<span class="variable">.github</span><span class="variable">.xch168</span><span class="variable">.testas32</span><span class="variable">.MainActivity</span><span class="variable">.onCreate</span>(Unknown Source:<span class="number">9</span>)</span><br><span class="line">        at android<span class="variable">.app</span><span class="variable">.Activity</span><span class="variable">.performCreate</span>(Activity<span class="variable">.java</span>:<span class="number">7130</span>)</span><br><span class="line">        at android<span class="variable">.app</span><span class="variable">.Activity</span><span class="variable">.performCreate</span>(Activity<span class="variable">.java</span>:<span class="number">7121</span>)</span><br><span class="line">        at android<span class="variable">.app</span><span class="variable">.Instrumentation</span><span class="variable">.callActivityOnCreate</span>(Instrumentation<span class="variable">.java</span>:<span class="number">1262</span>)</span><br><span class="line">        at android<span class="variable">.app</span><span class="variable">.ActivityThread</span><span class="variable">.performLaunchActivity</span>(ActivityThread<span class="variable">.java</span>:<span class="number">2905</span>)</span><br><span class="line">        at android<span class="variable">.app</span><span class="variable">.ActivityThread</span><span class="variable">.handleLaunchActivity</span>(ActivityThread<span class="variable">.java</span>:<span class="number">3060</span>) </span><br><span class="line">        at android<span class="variable">.app</span><span class="variable">.servertransaction</span><span class="variable">.LaunchActivityItem</span><span class="variable">.execute</span>(LaunchActivityItem<span class="variable">.java</span>:<span class="number">78</span>)</span><br></pre></td></tr></table></figure>
+<p>为了解决这个问题，可以使用<code>&lt;SDK目录&gt;\tools\proguard\bin</code>下的<strong>proguardgui.bat</strong>脚本将Crash堆栈信息还原到混淆前的状态。步骤如下：</p>
+<ol>
+<li>运行<code>proguardgui.bat</code>脚本，然后点击<code>ReTrace</code></li>
+<li>选择<code>mapping.txt</code>文件，位于<code>&lt;module目录&gt;/build/outputs/mapping/release</code></li>
+<li>拷贝混淆后出错的堆栈信息</li>
+<li>点击右下角的ReTrace!按钮，完成Crash堆栈信息的追溯</li>
+</ol>
+<p><img src="/2018/05/13/android-garble-proguard/retrace.png" alt="retrace"></p>
+<h3 id="七、压缩资源"><a href="#七、压缩资源" class="headerlink" title="七、压缩资源"></a>七、压缩资源</h3><blockquote>
+<p>资源压缩只与代码压缩协同工作。代码压缩器移除所有未使用的代码后，资源压缩器便可确定应用仍然使用的资源。这在您添加包含资源的代码库时体现得尤为明显 - 您必须移除未使用的库代码，使库资源变为未引用资源，才能通过资源压缩器将它们移除。</p>
+</blockquote>
+<p>开启资源压缩：</p>
+<p>在 <code>build.gradle</code> 文件中将 <code>shrinkResources</code> 属性设置为 <code>true</code>（在用于代码压缩的 <code>minifyEnabled</code> 旁边）</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">android &#123;</span><br><span class="line">    ...</span><br><span class="line">    buildTypes &#123;</span><br><span class="line">        release &#123;</span><br><span class="line">            shrinkResources <span class="literal">true</span></span><br><span class="line">            minifyEnabled <span class="literal">true</span></span><br><span class="line">            proguardFiles getDefaultProguardFile(<span class="string">'proguard-android.txt'</span>),</span><br><span class="line">                    <span class="string">'proguard-rules.pro'</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="八、自定义要保留的资源"><a href="#八、自定义要保留的资源" class="headerlink" title="八、自定义要保留的资源"></a>八、自定义要保留的资源</h3><blockquote>
+<p>如果您有想要保留或舍弃的特定资源，请在您的项目中创建一个包含 <code>&lt;resources&gt;</code> 标记的 XML 文件，并在 <code>tools:keep</code> 属性中指定每个要保留的资源，在 <code>tools:discard</code> 属性中指定每个要舍弃的资源。这两个属性都接受逗号分隔的资源名称列表。您可以使用星号字符作为通配符。</p>
+</blockquote>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version="1.0" encoding="utf-8"?&gt;</span><br><span class="line"><span class="tag">&lt;<span class="name">resources</span> <span class="attr">xmlns:tools</span>=<span class="string">"http://schemas.android.com/tools"</span></span></span><br><span class="line"><span class="tag">    <span class="attr">tools:keep</span>=<span class="string">"@layout/l_used*_c,@layout/l_used_a,@layout/l_used_b*"</span></span></span><br><span class="line"><span class="tag">    <span class="attr">tools:discard</span>=<span class="string">"@layout/unused2"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>将该文件保存在项目资源中，例如，保存在 <code>res/raw/keep.xml</code>。构建不会将该文件打包到 APK 之中。</p>
+<h3 id="九、总结"><a href="#九、总结" class="headerlink" title="九、总结"></a>九、总结</h3><p>混淆后可以减小APK的大小，可以提高被反编译的难度，但是混淆后需要进行系统全面的测试。</p>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
+<li><a href="https://developer.android.com/studio/build/shrink-code?hl=zh-cn" target="_blank" rel="noopener">压缩代码和资源</a></li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzAxMTI4MTkwNQ==&amp;mid=2650824879&amp;idx=1&amp;sn=f7d6830cb10046ff61bb461a15353e34&amp;chksm=80b7b431b7c03d271d1d836b586a29f813d738d9b7774075f8b50e7ab0215052c3e075ab71c4&amp;scene=38#wechat_redirect" target="_blank" rel="noopener">Android 混淆查缺补漏</a></li>
+</ol>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/05/13/android-garble-proguard/">Android代码混淆——Proguard</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
+        <p><span>发布时间:</span>2018-05-13, 19:49:05</p>
+        <p><span>最后更新:</span>2018-05-14, 07:22:39</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/05/13/android-garble-proguard/" title="Android代码混淆——Proguard">https://xch168.github.io/2018/05/13/android-garble-proguard/</a>
+            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2018/05/13/android-garble-proguard/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2018/05/20/apktool-dex2jar-jd/">
+                    Android反编译：Apktool、dex2jar、JD-GUI的使用
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2018/05/06/uiautomator-use/">
+                    使用UI Automator实现Android UI的自动化测试
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#一、概述"><span class="toc-number">1.</span> <span class="toc-text">一、概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#二、开启混淆"><span class="toc-number">2.</span> <span class="toc-text">二、开启混淆</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#三、混淆规则"><span class="toc-number">3.</span> <span class="toc-text">三、混淆规则</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#keep类关键字"><span class="toc-number">3.1.</span> <span class="toc-text">keep类关键字</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#通配符"><span class="toc-number">3.2.</span> <span class="toc-text">通配符</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#四、配置自己的混淆"><span class="toc-number">4.</span> <span class="toc-text">四、配置自己的混淆</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#五、查看混淆结果"><span class="toc-number">5.</span> <span class="toc-text">五、查看混淆结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#六、追溯Crash堆栈信息"><span class="toc-number">6.</span> <span class="toc-text">六、追溯Crash堆栈信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#七、压缩资源"><span class="toc-number">7.</span> <span class="toc-text">七、压缩资源</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#八、自定义要保留的资源"><span class="toc-number">8.</span> <span class="toc-text">八、自定义要保留的资源</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#九、总结"><span class="toc-number">9.</span> <span class="toc-text">九、总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">10.</span> <span class="toc-text">参考链接</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn,
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+<script>
+    yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+</script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Android代码混淆——Proguard　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2018/05/13/android-garble-proguard/" data-title="Android代码混淆——Proguard" data-url="https://xch168.github.io/2018/05/13/android-garble-proguard/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"xch168"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2018/05/20/apktool-dex2jar-jd/" title="上一篇: Android反编译：Apktool、dex2jar、JD-GUI的使用">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2018/05/06/uiautomator-use/" title="下一篇: 使用UI Automator实现Android UI的自动化测试">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2019/04/02/IntentService-analysis/">IntentService解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/19/HandlerThread-analysis/">HandlerThread解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/18/BlockCanary-analysis/">BlockCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/16/android-handler/">Android消息机制——Handler</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/09/android-anr-analysis/">Android应用ANR分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/24/android-oom-analysis/">Android OOM分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/22/leakcanary-principle-analysis/">LeakCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/31/android-memory-leak-analysis/">Android内存泄漏分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/28/android-hotfix-principle-analysis/">Android热修复原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/27/android-plugin-principle-analysis/">Android插件化原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/08/android-hook/">Hook技术</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/android-classloader/">ClassLoader解析（二）：Android中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/java-classloader/">ClassLoader解析（一）：Java中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/29/android-findbugs-plugin-usage/">使用FindBugs插件检查Android代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/15/android-travis-ci/">基于Travis CI的Android项目自动构建流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/10/use-checkstyle-for-better-code-style/">使用Checkstyle规范代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/01/java-transient/">Java中的transient关键字</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/30/android-parcelable-serializable/">Android中的序列化：Parcelable和Serializable</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/23/android-6-0-permission/">Android6.0运行时权限处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/10/Android-Studio-custom-code-template/">在Android Studio中自定义代码模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/08/RecyclerView-best-practices/">RecyclerView性能优化</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/02/android-ffmpeg-logcat/">在Android logcat中打印FFmpeg调试信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/26/android-invoke-ffmpeg-cmd/">在Android项目中调用FFmpeg命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/13/Efficient-loading-bitmap/">高效地加载Bitmap</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/27/android-apk-shelling/">Android APK脱壳--腾讯乐固、360加固一键脱壳</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/DiskLruCache-analyze/">DiskLruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/LruCache-analyze/">LruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-crash-handler/">Android全局异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-size-unit/">Android中的单位(dp、sp、dpi)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/ConstraintLayout-usage/">ConstraintLayout(约束布局)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/26/java-annotation-processor/">Java注解处理器</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/25/java-annotation/">Java注解Annotation</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/18/java-dynamic-proxy/">Java动态代理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">将FFmpeg编译成一个libffmpeg.so库</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-ffmpeg-compile/">Android NDK交叉编译FFmpeg</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-apk-incremental-update/">Android NDK开发-APK增量更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-exception-handle/">Android NDK开发-异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/15/android-ndk-lldb-debug/">Android NDK开发-LLDB调试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/04/android-ndk-cmake/">Android NDK开发-CMake</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/01/android-ndk-environment/">Android NDK开发-环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/17/use-lint-analyse-code/">使用Lint进行静态代码分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/09/android-tools-attributes-use/">Android中tools属性的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/28/clip-children/">Android中一个很有用的属性——clipChildren</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/20/apktool-dex2jar-jd/">Android反编译：Apktool、dex2jar、JD-GUI的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/13/android-garble-proguard/">Android代码混淆——Proguard</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/06/uiautomator-use/">使用UI Automator实现Android UI的自动化测试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/21/adb-commands/">adb常用命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/08/skill-for-advanced-android-development-engineers/">高级Android开发工程师必备技能</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/23/use-bintray-release-publish-lib-to-jcenter/">使用bintray-release快速发布库到JCenter</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/05/android-performance-patterns/">Android性能优化典范</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2019 辉天神龙
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >本站到访数: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">本页阅读量: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

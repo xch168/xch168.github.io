@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="辉天神龙" />
+
+
+
+<meta name="description" content="概述 JNI（Java Native Interface）：Java本地接口。是为了方便使用Java调用C、C++等本地代码所封装的一层接口。大家都知道，Java的优点是跨平台，但是作为优点的同时，其在本地交互的时候就变成了缺点。Java的跨平台特性导致其本地交互的能力不够强大，一些和操作系统相关的特性Java无法完成，于是Java提供了JNI专门用于和本地代码交互，这样就增强了Java语言的本地">
+<meta name="keywords" content="Android,NDK">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android NDK开发-JNI">
+<meta property="og:url" content="https://xch168.github.io/2018/07/08/android-ndk-jni/index.html">
+<meta property="og:site_name" content="辉天神龙">
+<meta property="og:description" content="概述 JNI（Java Native Interface）：Java本地接口。是为了方便使用Java调用C、C++等本地代码所封装的一层接口。大家都知道，Java的优点是跨平台，但是作为优点的同时，其在本地交互的时候就变成了缺点。Java的跨平台特性导致其本地交互的能力不够强大，一些和操作系统相关的特性Java无法完成，于是Java提供了JNI专门用于和本地代码交互，这样就增强了Java语言的本地">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://xch168.github.io/2018/07/08/android-ndk-jni/method_mapping.png">
+<meta property="og:updated_time" content="2018-07-14T16:21:46.359Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android NDK开发-JNI">
+<meta name="twitter:description" content="概述 JNI（Java Native Interface）：Java本地接口。是为了方便使用Java调用C、C++等本地代码所封装的一层接口。大家都知道，Java的优点是跨平台，但是作为优点的同时，其在本地交互的时候就变成了缺点。Java的跨平台特性导致其本地交互的能力不够强大，一些和操作系统相关的特性Java无法完成，于是Java提供了JNI专门用于和本地代码交互，这样就增强了Java语言的本地">
+<meta name="twitter:image" content="https://xch168.github.io/2018/07/08/android-ndk-jni/method_mapping.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternative" href="/atom.xml" title="辉天神龙" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Android NDK开发-JNI | 辉天神龙</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        open_in_new: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?44ae9c3649f134270ec7e29df4839012";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">辉天神龙</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="true" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/friends/">友链</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android/">Android</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android-Studio/">Android Studio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Annotation/">Annotation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CI/">CI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ClassLoader/">ClassLoader</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Decompile/">Decompile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Patterns/">Design Patterns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/FFmpeg/">FFmpeg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hook/">Hook</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NDK/">NDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Performance/">Performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test/">Test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/">Tools</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/插件化/">插件化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/热修复/">热修复</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">Android攻城狮</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">辉天神龙</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">辉天神龙</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/friends/">友链</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-android-ndk-jni" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/07/08/android-ndk-jni/" class="article-date">
+      <time datetime="2018-07-08T07:36:23.000Z" itemprop="datePublished">2018-07-08</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Android NDK开发-JNI
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NDK/">NDK</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p>JNI（Java Native Interface）：Java本地接口。是为了方便使用Java调用C、C++等本地代码所封装的一层接口。大家都知道，Java的优点是跨平台，但是作为优点的同时，其在本地交互的时候就变成了缺点。Java的跨平台特性导致其本地交互的能力不够强大，一些和操作系统相关的特性Java无法完成，于是Java提供了JNI专门用于和本地代码交互，这样就增强了Java语言的本地交互能力。</p>
+</blockquote>
+<a id="more"></a>
+<h3 id="JNI描述符"><a href="#JNI描述符" class="headerlink" title="JNI描述符"></a>JNI描述符</h3><h4 id="域描述符"><a href="#域描述符" class="headerlink" title="域描述符"></a>域描述符</h4><h5 id="基本类型描述符"><a href="#基本类型描述符" class="headerlink" title="基本类型描述符"></a>基本类型描述符</h5><table>
+<thead>
+<tr>
+<th>Field Desciptor</th>
+<th>Java Language Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Z</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td>B</td>
+<td>byte</td>
+</tr>
+<tr>
+<td>C</td>
+<td>char</td>
+</tr>
+<tr>
+<td>S</td>
+<td>short</td>
+</tr>
+<tr>
+<td>I</td>
+<td>int</td>
+</tr>
+<tr>
+<td>J</td>
+<td>long</td>
+</tr>
+<tr>
+<td>F</td>
+<td>float</td>
+</tr>
+<tr>
+<td>D</td>
+<td>Double</td>
+</tr>
+</tbody>
+</table>
+<p><em>除了<strong>boolean</strong>和<strong>long</strong>类型分别为<strong>Z</strong>和<strong>J</strong>外，其他的描述符对应的都是Java类型名的大写字母。<strong>void</strong>的描述符为<strong>V</strong></em></p>
+<h5 id="引用类型描述符"><a href="#引用类型描述符" class="headerlink" title="引用类型描述符"></a>引用类型描述符</h5><p>一般的引用类型描述符规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">L + 类描述符 + ；</span><br></pre></td></tr></table></figure>
+<p>如，String类型的域描述符为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Ljava/lang/String;</span><br></pre></td></tr></table></figure>
+<p>数组的域描述符比较特殊，规则：其中有多少级数组就有多少个“[”，数组的类型为类时，则有分号，为基本类型时没有分号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[ + 其类型的域描述符</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">int[]      描述符为 [I</span><br><span class="line">long[]     描述符为 [J</span><br><span class="line">String[]   描述符为 [Ljava/lang/String;</span><br><span class="line">int[][]    描述符为 [[I</span><br><span class="line">double[][] 描述符为 [[D</span><br></pre></td></tr></table></figure>
+<h4 id="类描述符"><a href="#类描述符" class="headerlink" title="类描述符"></a>类描述符</h4><p>类描述符是类的完整名称：包名+类名，Java中包名用.分隔，JNI中改成/分隔</p>
+<p>如，Java中java.lang.String类的描述符为java/lang/String</p>
+<h4 id="方法描述符（方法签名）"><a href="#方法描述符（方法签名）" class="headerlink" title="方法描述符（方法签名）"></a>方法描述符（方法签名）</h4><p>方法描述符需要将所有类型的域描述符按照声明顺序放入括号，然后加上返回值类型的域描述符，规则如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(参数……)返回类型</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Java 层方法               --&gt;    JNI 函数签名</span><br><span class="line">String getString()       --&gt; ()Ljava/lang/String;</span><br><span class="line">int sum(int a, int b)    --&gt; (II)I</span><br><span class="line">void main(String[] args) --&gt; ([Ljava/lang/String;)V</span><br></pre></td></tr></table></figure>
+<h3 id="JNI方法结构分析"><a href="#JNI方法结构分析" class="headerlink" title="JNI方法结构分析"></a>JNI方法结构分析</h3><p>命名规则：</p>
+<p><code>extern &quot;C&quot; JNIEXPORT 返回值 JNICALL Java_全路径类名_方法名__参数签名(JNIEnv* , jobject, 其它参数);</code></p>
+<p>说明：</p>
+<p><strong>JNIEXPORT</strong>、<strong>JNICALL</strong>：这两个关键词是宏定义，主要是注明该函数是JNI函数，当虚拟机加载so库时，如果发现函数含有这两个宏定义时，就会链接到对应的Java层的native方法。</p>
+<p><strong>Java_</strong>：标识该函数来源于Java。</p>
+<p><strong>__参数签名</strong>：如果是重载方法，则有参数签名，否则没有。参数签名的斜杠“/”改为“_”，分号“；”改为”_2”连接。</p>
+<p><strong>extern “C”</strong> ：如果在使用的是C++，在函数前面加extern “C”，表示按照C的方式编译。</p>
+<p><strong>JNIEnv</strong>：指向函数表指针的指针，函数表里面定义了很多JNI函数，通过这些函数可以实现Java层和JNI层的交互，就是说JNIEnv调用JNI函数可以访问Java虚拟机，操作Java对象。</p>
+<p><strong>jobject</strong>：调用该方法的Java实例对象。对于Java的native方法，static和非static方法的区别在于第二个参数，static的为jclass，非static的为jobject。</p>
+<p>示例：</p>
+<p><img src="/2018/07/08/android-ndk-jni/method_mapping.png" alt="method-mapping"></p>
+<h3 id="打印log"><a href="#打印log" class="headerlink" title="打印log"></a>打印log</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;android/log.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span>  LOG_TAG    <span class="meta-string">"native-lib"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span>  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span>  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span>  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span> JNIEXPORT jstring JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo2_MainActivity_stringFromJNI(JNIEnv* env, jobject<span class="comment">/* this */</span>) &#123;</span><br><span class="line">	<span class="comment">// 这样就可以在Logcat中查看到log</span></span><br><span class="line">    LOGI(<span class="string">"invoke method: stringFromJNI"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> hello = <span class="string">"Hello from C++"</span>;</span><br><span class="line">    <span class="keyword">return</span> env-&gt;NewStringUTF(hello.c_str());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="JNI函数访问Java对象的变量"><a href="#JNI函数访问Java对象的变量" class="headerlink" title="JNI函数访问Java对象的变量"></a>JNI函数访问Java对象的变量</h3><p>步骤：</p>
+<ol>
+<li><p>通过<code>env-&gt;GetObjectClass(jobject)</code>获取Java对象的class类，返回一个jclass；</p>
+</li>
+<li><p>调用<code>env-&gt;GetFieldID(jclazz, fieldName, signature)</code>的到该变量的id，即jfieldID；</p>
+<p>如果变量是静态static的，则调用的方法为<code>GetStaticFieldID</code>。</p>
+</li>
+<li><p>最后通过调用<code>env-&gt;Get{type}Field(jobject, fieldId)</code>的到该变量的值。其中{type}是变量的类型；</p>
+<p>如果变量是静态static的，则调用的方法是<code>GetStatic{type}Field(jclass, fieldId)</code></p>
+<p><strong>注意</strong>：static的话，是使用jclass作为参数</p>
+</li>
+</ol>
+<hr>
+<h4 id="访问非static变量"><a href="#访问非static变量" class="headerlink" title="访问非static变量"></a>访问非static变量</h4><p>Java层：native方法定义和调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">int</span> num = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">int</span> <span class="title">addNum</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"调用前：num="</span> + num);</span><br><span class="line">    Log.i(TAG, <span class="string">"调用后："</span> + addNum());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT jint JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_addNum(JNIEnv *env, jobject instance) &#123;</span><br><span class="line">    <span class="comment">// 获取实例对应的 class</span></span><br><span class="line">    jclass jclazz = env-&gt;GetObjectClass(instance);</span><br><span class="line">    <span class="comment">// 通过class获取相应的变量的 field id</span></span><br><span class="line">    jfieldID fid = env-&gt;GetFieldID(jclazz, <span class="string">"num"</span>, <span class="string">"I"</span>);</span><br><span class="line">    <span class="comment">// 通过 field id 获取对应变量的值</span></span><br><span class="line">    jint num = env-&gt;GetIntField(instance, fid);</span><br><span class="line">    num++;</span><br><span class="line">    <span class="keyword">return</span> num;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: 调用前：num=<span class="number">1</span></span><br><span class="line">MainActivity: 调用后：<span class="number">2</span></span><br></pre></td></tr></table></figure>
+<h4 id="访问static变量"><a href="#访问static变量" class="headerlink" title="访问static变量"></a>访问static变量</h4><p>Java层：native方法定义和调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> String name = <span class="string">"Tom"</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">accessStaticField</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"调用前：name="</span> + name);</span><br><span class="line">    accessStaticField();</span><br><span class="line">    Log.i(TAG, <span class="string">"调用后："</span> + name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT <span class="keyword">void</span> JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_accessStaticField(JNIEnv *env, jobject instance) &#123;</span><br><span class="line">    jclass jclazz = env-&gt;GetObjectClass(instance);</span><br><span class="line">    jfieldID fid = env-&gt;GetStaticFieldID(jclazz, <span class="string">"name"</span>, <span class="string">"Ljava/lang/String;"</span>);</span><br><span class="line">    jstring name = (jstring)(env-&gt;GetStaticObjectField(jclazz, fid));</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *str = env-&gt;GetStringUTFChars(name, JNI_FALSE);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 不要用 == 比较字符串</span></span><br><span class="line"><span class="comment">     *  name == (jstring)"Tom"</span></span><br><span class="line"><span class="comment">     * 或用 = 直接赋值</span></span><br><span class="line"><span class="comment">     * name = (jstring)"Jerry"</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">char</span> ch[<span class="number">30</span>] = <span class="string">"hello, "</span>;</span><br><span class="line">    <span class="built_in">strcat</span>(ch, str);</span><br><span class="line">    jstring new_str = env-&gt;NewStringUTF(ch);</span><br><span class="line">    <span class="comment">// 将jstring类型的变量，设置到java</span></span><br><span class="line">    env-&gt;SetStaticObjectField(jclazz, fid, new_str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: 调用前：name=Tom</span><br><span class="line">MainActivity: 调用后：hello, Tom</span><br></pre></td></tr></table></figure></p>
+<p><strong>注意</strong>：获取Java静态变量，都是调用JNI相应静态函数，不能调用非静态的，同时留意传入的参数是<code>jclass</code>，而不是jobject。</p>
+<h4 id="访问private变量，并对其修改"><a href="#访问private变量，并对其修改" class="headerlink" title="访问private变量，并对其修改"></a>访问private变量，并对其修改</h4><p>Java层：native方法定义和调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">int</span> age = <span class="number">25</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">accessPrivateField</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"调用前：age="</span> + age);</span><br><span class="line">    accessPrivateField();</span><br><span class="line">    Log.i(TAG, <span class="string">"调用后：age"</span> + age);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT <span class="keyword">void</span> JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_accessPrivateField(JNIEnv *env, jobject instance) &#123;</span><br><span class="line">    jclass clazz = env-&gt;GetObjectClass(instance);</span><br><span class="line">    jfieldID fid = env-&gt;GetFieldID(clazz, <span class="string">"age"</span>, <span class="string">"I"</span>);</span><br><span class="line">    jint age = env-&gt;GetIntField(instance, fid);</span><br><span class="line">    age++;</span><br><span class="line">    env-&gt;SetIntField(instance, fid, age);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: 调用前：age=<span class="number">25</span></span><br><span class="line">MainActivity: 调用后：age=<span class="number">26</span></span><br></pre></td></tr></table></figure>
+<h3 id="JNI函数调用Java对象的方法"><a href="#JNI函数调用Java对象的方法" class="headerlink" title="JNI函数调用Java对象的方法"></a>JNI函数调用Java对象的方法</h3><p>步骤：</p>
+<ol>
+<li><p>通过<code>env-&gt;GetObjectClass(jobject)</code>获取Java对象的class类，返回一个jclass；</p>
+</li>
+<li><p>通过<code>env-&gt;GetMethodID(jclass, methodName, sign)</code>获取到Java对象的方法id，即jmethodID，当获取的方法是static时，使用<code>GetStaticMethodID</code>；</p>
+</li>
+<li><p>通过JNI函数<code>env-&gt;Call{type}Method(jobject, jmethod, param...)</code>实现调用Java的方法；</p>
+<p>若调用的是static方法，则使用<code>CallStatic{type}Method(jclass, jmethod, param...)</code>，使用的是jclass。</p>
+</li>
+</ol>
+<hr>
+<h4 id="调用Java公有方法"><a href="#调用Java公有方法" class="headerlink" title="调用Java公有方法"></a>调用Java公有方法</h4><p>Java层：native方法定义和调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> String name = <span class="string">"Tom"</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.name = name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">invokePublicMethod</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"调用前：name="</span> + name);</span><br><span class="line">    accessPublicMethod();</span><br><span class="line">    Log.i(TAG, <span class="string">"调用后：name="</span> + name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT <span class="keyword">void</span> JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_invokePublicMethod(JNIEnv *env, jobject instance) &#123;</span><br><span class="line">    <span class="comment">// 1.获取对应的 class</span></span><br><span class="line">    jclass jclazz = env-&gt;GetObjectClass(instance);</span><br><span class="line">    <span class="comment">// 2.获取方法的id</span></span><br><span class="line">    jmethodID mid = env-&gt;GetMethodID(jclazz, <span class="string">"setName"</span>, <span class="string">"(Ljava/lang/String;)V"</span>);</span><br><span class="line">    <span class="comment">// 3.字符数组转换为字符串</span></span><br><span class="line">    <span class="keyword">char</span> c[<span class="number">10</span>] = <span class="string">"Jerry"</span>;</span><br><span class="line">    jstring jName = env-&gt;NewStringUTF(c);</span><br><span class="line">    <span class="comment">// 4.通过该jobject调用对应的方法</span></span><br><span class="line">    env-&gt;CallVoidMethod(instance, mid, jName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: 调用前：name=Tom</span><br><span class="line">MainActivity: 调用后：name=Jerry</span><br></pre></td></tr></table></figure>
+<p><strong>调用Java private方法也一样，Java的访问修饰符对C++无效。</strong></p>
+<h4 id="调用Java静态方法"><a href="#调用Java静态方法" class="headerlink" title="调用Java静态方法"></a>调用Java静态方法</h4><p>Java层：native方法定义和调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">int</span> height = <span class="number">170</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">getHeight</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> height;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">int</span> <span class="title">invokeStaticMethod</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"调用静态方法：getHeight() = "</span> + invokeStaticMethod());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT jint JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_invokeStaticMethod(JNIEnv *env, jobject instance) &#123;</span><br><span class="line">    <span class="comment">// 1.获取对应的 class</span></span><br><span class="line">    jclass jclazz = env-&gt;GetObjectClass(instance);</span><br><span class="line">    <span class="comment">// 2.通过class类找到对应的静态方法</span></span><br><span class="line">    jmethodID mid = env-&gt;GetStaticMethodID(jclazz, <span class="string">"getHeight"</span>, <span class="string">"()I"</span>);</span><br><span class="line">    <span class="comment">// 3.通过class调用对应的静态方法</span></span><br><span class="line">    <span class="keyword">return</span> env-&gt;CallStaticIntMethod(jclazz, mid);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: 调用静态方法：getHeight() = <span class="number">170</span></span><br></pre></td></tr></table></figure>
+<h4 id="调用Java父类方法"><a href="#调用Java父类方法" class="headerlink" title="调用Java父类方法"></a>调用Java父类方法</h4><p>Java层：native方法定义和调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BaseActivity</span> <span class="keyword">extends</span> <span class="title">AppCompatActivity</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">hello</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Welcome to JNI world, "</span> + name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MainActivity</span> <span class="keyword">extends</span> <span class="title">BaseActivity</span> </span>&#123;</span><br><span class="line">	<span class="comment">//……</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">native</span> String <span class="title">invokeSuperMethod</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">        Log.i(TAG, <span class="string">"调用父类方法：hello(name) = "</span> + invokeSuperMethod());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT jstring JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_invokeSuperMethod(JNIEnv *env, jobject instance) &#123;</span><br><span class="line">    <span class="comment">// 1.通过反射获取 class</span></span><br><span class="line">    jclass jclazz = env-&gt;FindClass(<span class="string">"com/github/xch168/ndkdemo/BaseActivity"</span>);</span><br><span class="line">    <span class="keyword">if</span> (jclazz == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">char</span> c[<span class="number">10</span>] = <span class="string">"error"</span>;</span><br><span class="line">        <span class="keyword">return</span> env-&gt;NewStringUTF(c);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 2.通过class找到对应的方法id</span></span><br><span class="line">    jmethodID mid = env-&gt;GetMethodID(jclazz, <span class="string">"hello"</span>, <span class="string">"(Ljava/lang/String;)Ljava/lang/String;"</span>);</span><br><span class="line">    <span class="keyword">char</span> ch[<span class="number">10</span>] = <span class="string">"Tom"</span>;</span><br><span class="line">    jstring jstr = env-&gt;NewStringUTF(ch);</span><br><span class="line">    <span class="comment">// 3.调用方法</span></span><br><span class="line">    <span class="keyword">return</span> (jstring) env-&gt;CallNonvirtualObjectMethod(instance, jclazz, mid, jstr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: 调用父类方法：hello(name) = Welcome to JNI world, Tom</span><br></pre></td></tr></table></figure>
+<p><strong>两个不同点</strong>：</p>
+<ul>
+<li>获取的是父类的方法，所有不能通过GetObjectClass获取，需要通过反射<code>FindClass</code>获取；</li>
+<li>调用父类的方法是<code>CallNonvirtual{type}Method</code>函数。Novirtual是非虚函数。</li>
+</ul>
+<h3 id="Java方法传递参数给JNI函数"><a href="#Java方法传递参数给JNI函数" class="headerlink" title="Java方法传递参数给JNI函数"></a>Java方法传递参数给JNI函数</h3><p>native方法既可以传递基本类型参数给JNI（可以不经过转换直接使用），也可以传递复杂类型（需要转换为C/C++的数据结构才能使用）如数组，String或自定义的类等。</p>
+<p>用到的JNI函数：</p>
+<ul>
+<li>获取数组长度：<code>GetArrayLength(j{type}Array)</code>，type为基础类型；</li>
+<li>数组转换为对应类型的指针：<code>Get{type}ArrayElements(jarr, 0)</code></li>
+<li>获取构造函数的jmethodID时，仍然是用<code>env-&gt;GetMethodID(jclass, methodName, sign)</code>获取，方法名是<code>&lt;init&gt;</code>；</li>
+<li>通过构造函数new一个jobject，<code>env-&gt;NewObject(jclass, constructorMethodId, param...)</code>，无参构造函数param为空。</li>
+</ul>
+<h4 id="数组参数的传递"><a href="#数组参数的传递" class="headerlink" title="数组参数的传递"></a>数组参数的传递</h4><p>Java层：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">int</span> <span class="title">intArrayMethod</span><span class="params">(<span class="keyword">int</span>[] arr)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"intArrayMethod: "</span> + intArrayMethod(<span class="keyword">new</span> <span class="keyword">int</span>[] &#123;<span class="number">4</span>, <span class="number">3</span>, <span class="number">9</span>, <span class="number">9</span>&#125;));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT jint JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_intArrayMethod(JNIEnv *env, jobject instance, jintArray arr_) &#123;</span><br><span class="line">    jint *arr = env-&gt;GetIntArrayElements(arr_, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> len = env-&gt;GetArrayLength(arr_);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; len; ++i) &#123;</span><br><span class="line">        sum += arr[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    env-&gt;ReleaseIntArrayElements(arr_, arr, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: intArrayMethod: <span class="number">25</span></span><br></pre></td></tr></table></figure>
+<h4 id="自定义对象参数的传递"><a href="#自定义对象参数的传递" class="headerlink" title="自定义对象参数的传递"></a>自定义对象参数的传递</h4><p>Java层：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> age;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Person</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Person</span><span class="params">(<span class="keyword">int</span> age, String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">        <span class="keyword">this</span>.age = age;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getAge</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> age;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAge</span><span class="params">(<span class="keyword">int</span> age)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.age = age;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Person: &#123;name:"</span> + name + <span class="string">", age:"</span> + age + <span class="string">"&#125;"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//------</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> Person <span class="title">objectMethod</span><span class="params">(Person person)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.activity_main);</span><br><span class="line"></span><br><span class="line">    Log.i(TAG, <span class="string">"objectMethod: "</span> + objectMethod(<span class="keyword">new</span> Person()).toString());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C++层：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span></span><br><span class="line">JNIEXPORT jobject JNICALL</span><br><span class="line">Java_com_github_xch168_ndkdemo_MainActivity_objectMethod(JNIEnv *env, jobject instance, jobject person) &#123;</span><br><span class="line"></span><br><span class="line">    jclass clazz = env-&gt;GetObjectClass(person); <span class="comment">// 主要用的是person，而不是instance</span></span><br><span class="line">    <span class="keyword">if</span> (clazz == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> env-&gt;NewStringUTF(<span class="string">"cannot find class"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    jmethodID constructorMid = env-&gt;GetMethodID(clazz, <span class="string">"&lt;init&gt;"</span>, <span class="string">"(ILjava/lang/String;)V"</span>);</span><br><span class="line">    <span class="keyword">if</span> (constructorMid == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> env-&gt;NewStringUTF(<span class="string">"cannot find constructor method"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    jstring name = env-&gt;NewStringUTF(<span class="string">"Tom"</span>);</span><br><span class="line">    <span class="keyword">return</span> env-&gt;NewObject(clazz, constructorMid, <span class="number">25</span>, name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MainActivity: objectMethod: Person: &#123;name:Tom, age:<span class="number">25</span>&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
+<li><a href="https://blog.csdn.net/singwhatiwanna/article/details/9061545" target="_blank" rel="noopener">Java JNI介绍</a></li>
+<li><a href="http://cfanr.cn/2017/07/29/Android-NDK-dev-JNI-s-foundation/" target="_blank" rel="noopener">Android NDK开发：JNI基础篇</a></li>
+<li><a href="http://cfanr.cn/2017/08/05/Android-NDK-dev-JNI-s-practice/" target="_blank" rel="noopener">Android NDK开发：JNI实战篇</a></li>
+</ol>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
+        <p><span>发布时间:</span>2018-07-08, 15:36:23</p>
+        <p><span>最后更新:</span>2018-07-15, 00:21:46</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/07/08/android-ndk-jni/" title="Android NDK开发-JNI">https://xch168.github.io/2018/07/08/android-ndk-jni/</a>
+            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2018/07/08/android-ndk-jni/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2018/07/15/android-ndk-lldb-debug/">
+                    Android NDK开发-LLDB调试
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2018/07/04/android-ndk-cmake/">
+                    Android NDK开发-CMake
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JNI描述符"><span class="toc-number">2.</span> <span class="toc-text">JNI描述符</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#域描述符"><span class="toc-number">2.1.</span> <span class="toc-text">域描述符</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#基本类型描述符"><span class="toc-number">2.1.1.</span> <span class="toc-text">基本类型描述符</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#引用类型描述符"><span class="toc-number">2.1.2.</span> <span class="toc-text">引用类型描述符</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#类描述符"><span class="toc-number">2.2.</span> <span class="toc-text">类描述符</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方法描述符（方法签名）"><span class="toc-number">2.3.</span> <span class="toc-text">方法描述符（方法签名）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JNI方法结构分析"><span class="toc-number">3.</span> <span class="toc-text">JNI方法结构分析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#打印log"><span class="toc-number">4.</span> <span class="toc-text">打印log</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JNI函数访问Java对象的变量"><span class="toc-number">5.</span> <span class="toc-text">JNI函数访问Java对象的变量</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#访问非static变量"><span class="toc-number">5.1.</span> <span class="toc-text">访问非static变量</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#访问static变量"><span class="toc-number">5.2.</span> <span class="toc-text">访问static变量</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#访问private变量，并对其修改"><span class="toc-number">5.3.</span> <span class="toc-text">访问private变量，并对其修改</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JNI函数调用Java对象的方法"><span class="toc-number">6.</span> <span class="toc-text">JNI函数调用Java对象的方法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#调用Java公有方法"><span class="toc-number">6.1.</span> <span class="toc-text">调用Java公有方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#调用Java静态方法"><span class="toc-number">6.2.</span> <span class="toc-text">调用Java静态方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#调用Java父类方法"><span class="toc-number">6.3.</span> <span class="toc-text">调用Java父类方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Java方法传递参数给JNI函数"><span class="toc-number">7.</span> <span class="toc-text">Java方法传递参数给JNI函数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#数组参数的传递"><span class="toc-number">7.1.</span> <span class="toc-text">数组参数的传递</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#自定义对象参数的传递"><span class="toc-number">7.2.</span> <span class="toc-text">自定义对象参数的传递</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">8.</span> <span class="toc-text">参考链接</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn,
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+<script>
+    yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+</script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Android NDK开发-JNI　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2018/07/08/android-ndk-jni/" data-title="Android NDK开发-JNI" data-url="https://xch168.github.io/2018/07/08/android-ndk-jni/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"xch168"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2018/07/15/android-ndk-lldb-debug/" title="上一篇: Android NDK开发-LLDB调试">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2018/07/04/android-ndk-cmake/" title="下一篇: Android NDK开发-CMake">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2019/04/02/IntentService-analysis/">IntentService解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/19/HandlerThread-analysis/">HandlerThread解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/18/BlockCanary-analysis/">BlockCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/16/android-handler/">Android消息机制——Handler</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/09/android-anr-analysis/">Android应用ANR分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/24/android-oom-analysis/">Android OOM分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/22/leakcanary-principle-analysis/">LeakCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/31/android-memory-leak-analysis/">Android内存泄漏分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/28/android-hotfix-principle-analysis/">Android热修复原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/27/android-plugin-principle-analysis/">Android插件化原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/08/android-hook/">Hook技术</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/android-classloader/">ClassLoader解析（二）：Android中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/java-classloader/">ClassLoader解析（一）：Java中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/29/android-findbugs-plugin-usage/">使用FindBugs插件检查Android代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/15/android-travis-ci/">基于Travis CI的Android项目自动构建流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/10/use-checkstyle-for-better-code-style/">使用Checkstyle规范代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/01/java-transient/">Java中的transient关键字</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/30/android-parcelable-serializable/">Android中的序列化：Parcelable和Serializable</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/23/android-6-0-permission/">Android6.0运行时权限处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/10/Android-Studio-custom-code-template/">在Android Studio中自定义代码模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/08/RecyclerView-best-practices/">RecyclerView性能优化</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/02/android-ffmpeg-logcat/">在Android logcat中打印FFmpeg调试信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/26/android-invoke-ffmpeg-cmd/">在Android项目中调用FFmpeg命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/13/Efficient-loading-bitmap/">高效地加载Bitmap</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/27/android-apk-shelling/">Android APK脱壳--腾讯乐固、360加固一键脱壳</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/DiskLruCache-analyze/">DiskLruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/LruCache-analyze/">LruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-crash-handler/">Android全局异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-size-unit/">Android中的单位(dp、sp、dpi)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/ConstraintLayout-usage/">ConstraintLayout(约束布局)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/26/java-annotation-processor/">Java注解处理器</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/25/java-annotation/">Java注解Annotation</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/18/java-dynamic-proxy/">Java动态代理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">将FFmpeg编译成一个libffmpeg.so库</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-ffmpeg-compile/">Android NDK交叉编译FFmpeg</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-apk-incremental-update/">Android NDK开发-APK增量更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-exception-handle/">Android NDK开发-异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/15/android-ndk-lldb-debug/">Android NDK开发-LLDB调试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/04/android-ndk-cmake/">Android NDK开发-CMake</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/01/android-ndk-environment/">Android NDK开发-环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/17/use-lint-analyse-code/">使用Lint进行静态代码分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/09/android-tools-attributes-use/">Android中tools属性的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/28/clip-children/">Android中一个很有用的属性——clipChildren</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/20/apktool-dex2jar-jd/">Android反编译：Apktool、dex2jar、JD-GUI的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/13/android-garble-proguard/">Android代码混淆——Proguard</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/06/uiautomator-use/">使用UI Automator实现Android UI的自动化测试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/21/adb-commands/">adb常用命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/08/skill-for-advanced-android-development-engineers/">高级Android开发工程师必备技能</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/23/use-bintray-release-publish-lib-to-jcenter/">使用bintray-release快速发布库到JCenter</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/05/android-performance-patterns/">Android性能优化典范</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2019 辉天神龙
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >本站到访数: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">本页阅读量: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
