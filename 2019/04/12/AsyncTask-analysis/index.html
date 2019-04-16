@@ -23,7 +23,7 @@
 <meta property="og:site_name" content="辉天神龙">
 <meta property="og:description" content="概述 AsyncTask是一个抽象类，它是Android封装的一个轻量级异步操作的类。它可以在线程池中执行后台任务，然后把执行的进度和最终的结果传递到主线程，并在主线程中更新UI。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-14T15:09:03.109Z">
+<meta property="og:updated_time" content="2019-04-16T23:45:04.836Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="AsyncTask解析">
 <meta name="twitter:description" content="概述 AsyncTask是一个抽象类，它是Android封装的一个轻量级异步操作的类。它可以在线程池中执行后台任务，然后把执行的进度和最终的结果传递到主线程，并在主线程中更新UI。">
@@ -405,6 +405,19 @@
 </blockquote>
 </li>
 </ol>
+<h3 id="为什么AsyncTask必须在主线程实例化"><a href="#为什么AsyncTask必须在主线程实例化" class="headerlink" title="为什么AsyncTask必须在主线程实例化"></a>为什么AsyncTask必须在主线程实例化</h3><ul>
+<li><p>在Android 5.1(API 22)之前，AsyncTask内部用于控制线程切换的sHandler的初始化代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> InternalHandler sHandler = <span class="keyword">new</span> InternalHandler();</span><br></pre></td></tr></table></figure>
+<p>这就导致AsyncTask必须在主线程创建，才能让sHandler与主线程的Looper关联，来实现线程切换的相关逻辑。</p>
+</li>
+<li><p>在Android 5.1(API 22)之后，sHandler的初始化代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> InternalHandler sHandler;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Handler <span class="title">getMainHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (AsyncTask.class) &#123;</span><br><span class="line">        <span class="keyword">if</span> (sHandler == <span class="keyword">null</span>) &#123;</span><br><span class="line">            sHandler = <span class="keyword">new</span> InternalHandler(Looper.getMainLooper());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sHandler;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从代码可见，InternalHandler在实例化的时候会传入<code>Looper.getMainLooper()</code>，那么AsyncTask不是就可以在子线程中创建？经测试，在子线程创建不会报错。</p>
+<p>在API28的源码中，构造方法的注释：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates a new asynchronous task. This constructor must be invoked on the UI thread.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AsyncTask</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>((Looper) <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注释指出必须在主线程调用该构造方法，可能是为了兼容旧版的系统。</p>
+</li>
+</ul>
 <h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
 <li><a href="https://developer.android.com/reference/android/os/AsyncTask.html" target="_blank" rel="noopener">AsyncTask</a></li>
 <li><a href="https://lrh1993.gitbooks.io/android_interview_guide/content/android/basis/asynctask.html" target="_blank" rel="noopener">AsyncTask详解</a></li>
@@ -424,7 +437,7 @@
         <p><span>本文标题:</span><a href="/2019/04/12/AsyncTask-analysis/">AsyncTask解析</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
         <p><span>发布时间:</span>2019-04-12, 14:56:12</p>
-        <p><span>最后更新:</span>2019-04-14, 23:09:03</p>
+        <p><span>最后更新:</span>2019-04-17, 07:45:04</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2019/04/12/AsyncTask-analysis/" title="AsyncTask解析">https://xch168.github.io/2019/04/12/AsyncTask-analysis/</a>
             <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2019/04/12/AsyncTask-analysis/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
@@ -453,7 +466,7 @@
 
     <div id="toc" class="toc-article">
     <strong class="toc-title">文章目录</strong>
-    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AsyncTask简介"><span class="toc-number">2.</span> <span class="toc-text">AsyncTask简介</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#AsyncTask的泛型参数"><span class="toc-number">2.1.</span> <span class="toc-text">AsyncTask的泛型参数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#AsyncTask的核心方法"><span class="toc-number">2.2.</span> <span class="toc-text">AsyncTask的核心方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用"><span class="toc-number">3.</span> <span class="toc-text">使用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#源码解析-API-28"><span class="toc-number">4.</span> <span class="toc-text">源码解析(API 28)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AsyncTask使用不当的后果"><span class="toc-number">5.</span> <span class="toc-text">AsyncTask使用不当的后果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">6.</span> <span class="toc-text">参考链接</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AsyncTask简介"><span class="toc-number">2.</span> <span class="toc-text">AsyncTask简介</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#AsyncTask的泛型参数"><span class="toc-number">2.1.</span> <span class="toc-text">AsyncTask的泛型参数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#AsyncTask的核心方法"><span class="toc-number">2.2.</span> <span class="toc-text">AsyncTask的核心方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用"><span class="toc-number">3.</span> <span class="toc-text">使用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#源码解析-API-28"><span class="toc-number">4.</span> <span class="toc-text">源码解析(API 28)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AsyncTask使用不当的后果"><span class="toc-number">5.</span> <span class="toc-text">AsyncTask使用不当的后果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#为什么AsyncTask必须在主线程实例化"><span class="toc-number">6.</span> <span class="toc-text">为什么AsyncTask必须在主线程实例化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">7.</span> <span class="toc-text">参考链接</span></a></li></ol>
 </div>
 <style>
     .left-col .switch-btn,
