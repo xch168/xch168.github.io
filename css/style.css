@@ -848,7 +848,7 @@ a {
   background-size: 90%;
 }
 #header .header-nav .social .GitHub {
-  background: url("//assets-cdn.github.com/pinned-octocat.svg") no-repeat #fff;
+  background: url("https://github.githubassets.com/favicon.ico") no-repeat #fff;
   -webkit-background-size: 100%;
   -moz-background-size: 100%;
   background-size: 100%;

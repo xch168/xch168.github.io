@@ -51,6 +51,11 @@
     <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
 
 
+
+  <link rel="stylesheet" href="/lib/gitalk/gitalk.css">
+  <script src="/lib/gitalk/gitalk.min.js"></script>
+
+
 <link rel="stylesheet" href="/css/style.css">
 
 
@@ -428,23 +433,21 @@
 
 
     
-      <div class="duoshuo" id="comments">
-    <div id="comment-box" ></div>
-    <div class="ds-thread" id="ds-thread" data-thread-key="2018/01/08/skill-for-advanced-android-development-engineers/" data-title="高级Android开发工程师必备技能" data-url="https://xch168.github.io/2018/01/08/skill-for-advanced-android-development-engineers/"></div>
-    <script>
-        var duoshuoQuery = {short_name:"xch168"};
-        var loadComment = function(){
-            var d = document, s = d.createElement('script');
-            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
-            s.async = true; s.charset = 'UTF-8';
-            (d.head || d.body).appendChild(s);
-        }
+        <div class="gitalk">
+    <div id="gitalk-container"></div>
+    <script type="text/javascript">
+        const gitalk = new Gitalk({
+            clientID: 'c0b6df40419bff056b0a',
+            clientSecret: 'fcba9fe67a42251e97d1e4f8a75573e55051a007',
+            repo: 'xch168.github.io',
+            owner: 'xch168',
+            admin: ['xch168'],
+            id: location.pathname,      // Ensure uniqueness and length less than 50
+            distractionFreeMode: false  // Facebook-like distraction free mode
+        })
 
-        
+        gitalk.render('gitalk-container')
     </script>
-    
-    <script> loadComment(); </script>
-
 </div>
     
 
