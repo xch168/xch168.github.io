@@ -367,6 +367,49 @@ private void finish(Result result) {
 
    > 屏幕旋转或Activity在后台被系统杀掉等情况会导致Activity的重新创建，之前运行的AsyncTask（非静态的内部类）会持有一个之前Activity的引用，这个引用已经无效，这时调用onPostExecute()再去更新界面将不再生效。
 
+### 为什么AsyncTask必须在主线程实例化
+
+- 在Android 5.1(API 22)之前，AsyncTask内部用于控制线程切换的sHandler的初始化代码：
+
+  ```java
+  private static final InternalHandler sHandler = new InternalHandler();
+  ```
+
+  这就导致AsyncTask必须在主线程创建，才能让sHandler与主线程的Looper关联，来实现线程切换的相关逻辑。
+
+- 在Android 5.1(API 22)之后，sHandler的初始化代码：
+
+  ```java
+  private static InternalHandler sHandler;
+  
+  // ...
+  private static Handler getMainHandler() {
+      synchronized (AsyncTask.class) {
+          if (sHandler == null) {
+              sHandler = new InternalHandler(Looper.getMainLooper());
+          }
+          return sHandler;
+      }
+  }
+  ```
+
+  从代码可见，InternalHandler在实例化的时候会传入`Looper.getMainLooper()`，那么AsyncTask不是就可以在子线程中创建？经测试，在子线程创建不会报错。
+
+  在API28的源码中，构造方法的注释：
+
+  ```java
+  /**
+   * Creates a new asynchronous task. This constructor must be invoked on the UI thread.
+   */
+  public AsyncTask() {
+      this((Looper) null);
+  }
+  ```
+
+  注释指出必须在主线程调用该构造方法，可能是为了兼容旧版的系统。
+
+
+
 ### 参考链接
 
 1. [AsyncTask](https://developer.android.com/reference/android/os/AsyncTask.html)
