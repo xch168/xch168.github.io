@@ -88,7 +88,7 @@ disqus:
   # you have set "disqus_shortname" in your site's "_config.yml" 
 
 duoshuo: 
-  on: true
+  on: false
   domain: xch168
   # 是否开启多说评论，http://duoshuo.com/create-site/
   # 使用上面网址登陆你的多说，然后创建站点，在 domain 中填入你设定的域名前半部分
@@ -100,6 +100,14 @@ youyan:
   # 是否开启友言评论，http://www.uyan.cc/index.php
   # id 中填写你的友言用户数字ID，注册后进入后台管理即可查看
   # 友言服务在 Web 环境下运行，普通本地环境无法查看，请部署后在线上测试。
+
+gitalk: 
+  enable: true
+  client_id: c0b6df40419bff056b0a
+  client_secret: fcba9fe67a42251e97d1e4f8a75573e55051a007
+  repo: xch168.github.io
+  owner: xch168
+  admin: xch168
 
 
 # >>> Style Customisation 样式自定义 <<<

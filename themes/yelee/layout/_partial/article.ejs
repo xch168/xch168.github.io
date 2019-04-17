@@ -81,6 +81,12 @@
         <%- partial('comments/disqus', {
             shortname: config.disqus_shortname
           }) %>
+    <% } else if (theme.gitalk.enable) { %>
+        <%- partial('comments/gitalk', {
+            key: post.slug,
+            title: post.title,
+            url: config.url+url_for(post.path)
+          }) %>
     <% } %>
 <% } %>
 
