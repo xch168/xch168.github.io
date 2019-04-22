@@ -8,9 +8,9 @@ tags: [Android]
 
 >SharedPreferences(简称SP)是Android中常用的数据存储方式，SP采用key-value(键值对)形式，主要用于轻量级的数据存储，尤其适合保存应用的配置参数，但不建议使用SP来存储大规模的数据，可能会降低性能。
 
-> SP采用XML文件格式来保存数据，该文件位于`/data/data/<packageName>/shared_prefs/`。
-
 <!--more-->
+
+> SP采用XML文件格式来保存数据，该文件位于`/data/data/<packageName>/shared_prefs/`。
 
 ### 使用示例
 
