@@ -413,9 +413,10 @@ private void finish(Result result) {
 ### 参考链接
 
 1. [AsyncTask](https://developer.android.com/reference/android/os/AsyncTask.html)
-2. [AsyncTask详解](https://lrh1993.gitbooks.io/android_interview_guide/content/android/basis/asynctask.html)
-3. [关于AsyncTask的一次深度解析](https://juejin.im/post/58842012570c350062c111dd)
-4. [Android源码分析—带你认识不一样的AsyncTask](https://blog.csdn.net/singwhatiwanna/article/details/17596225)
-5. [AsyncTask的原理 及其源码分析](https://www.jianshu.com/p/37502bbbb25a)
-6. [Android AsyncTask 源码解析](https://blog.csdn.net/lmj623565791/article/details/38614699)
+2. [你真的了解AsyncTask？](http://weishu.me/2016/01/18/dive-into-asynctask/)
+3. [AsyncTask详解](https://lrh1993.gitbooks.io/android_interview_guide/content/android/basis/asynctask.html)
+4. [关于AsyncTask的一次深度解析](https://juejin.im/post/58842012570c350062c111dd)
+5. [Android源码分析—带你认识不一样的AsyncTask](https://blog.csdn.net/singwhatiwanna/article/details/17596225)
+6. [AsyncTask的原理 及其源码分析](https://www.jianshu.com/p/37502bbbb25a)
+7. [Android AsyncTask 源码解析](https://blog.csdn.net/lmj623565791/article/details/38614699)
 
