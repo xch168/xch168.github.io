@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="辉天神龙" />
+
+
+
+<meta name="description" content="概述 SharedPreferences(简称SP)是Android中常用的数据存储方式，SP采用key-value(键值对)形式，主要用于轻量级的数据存储，尤其适合保存应用的配置参数，但不建议使用SP来存储大规模的数据，可能会降低性能。">
+<meta name="keywords" content="Android">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SharedPreferences解析">
+<meta property="og:url" content="https://xch168.github.io/2019/04/18/SharedPreferences-analysis/index.html">
+<meta property="og:site_name" content="辉天神龙">
+<meta property="og:description" content="概述 SharedPreferences(简称SP)是Android中常用的数据存储方式，SP采用key-value(键值对)形式，主要用于轻量级的数据存储，尤其适合保存应用的配置参数，但不建议使用SP来存储大规模的数据，可能会降低性能。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://xch168.github.io/2019/04/18/SharedPreferences-analysis/shared_preference.jpg">
+<meta property="og:image" content="https://xch168.github.io/2019/04/18/SharedPreferences-analysis/shared_preferences_arch.jpg">
+<meta property="og:updated_time" content="2019-04-22T23:15:37.917Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SharedPreferences解析">
+<meta name="twitter:description" content="概述 SharedPreferences(简称SP)是Android中常用的数据存储方式，SP采用key-value(键值对)形式，主要用于轻量级的数据存储，尤其适合保存应用的配置参数，但不建议使用SP来存储大规模的数据，可能会降低性能。">
+<meta name="twitter:image" content="https://xch168.github.io/2019/04/18/SharedPreferences-analysis/shared_preference.jpg">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternative" href="/atom.xml" title="辉天神龙" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk@latest/dist/gitalk.min.js"></script> 
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>SharedPreferences解析 | 辉天神龙</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        open_in_new: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?44ae9c3649f134270ec7e29df4839012";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">辉天神龙</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="true" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/friends/">友链</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android/">Android</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android-Studio/">Android Studio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Annotation/">Annotation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CI/">CI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ClassLoader/">ClassLoader</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Decompile/">Decompile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Patterns/">Design Patterns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/FFmpeg/">FFmpeg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hook/">Hook</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NDK/">NDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Performance/">Performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test/">Test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/">Tools</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/插件化/">插件化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/热修复/">热修复</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">Android攻城狮</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">辉天神龙</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">辉天神龙</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/friends/">友链</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa 新浪微博" target="_blank" href="http://weibo.com/u/1660712952" title="新浪微博"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/xch168" title="GitHub"></a>
+                            
+                                <a class="fa StackOverflow" target="_blank" href="http://stackoverflow.com/users/6187166/xucanhui" title="StackOverflow"></a>
+                            
+                                <a class="fa Email" target="_blank" href="mailto:122565648@qq.com" title="Email"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-SharedPreferences-analysis" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2019/04/18/SharedPreferences-analysis/" class="article-date">
+      <time datetime="2019-04-18T12:27:07.000Z" itemprop="datePublished">2019-04-18</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      SharedPreferences解析
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p>SharedPreferences(简称SP)是Android中常用的数据存储方式，SP采用key-value(键值对)形式，主要用于轻量级的数据存储，尤其适合保存应用的配置参数，但不建议使用SP来存储大规模的数据，可能会降低性能。</p>
+</blockquote>
+<a id="more"></a>
+<blockquote>
+<p>SP采用XML文件格式来保存数据，该文件位于<code>/data/data/&lt;packageName&gt;/shared_prefs/</code>。</p>
+</blockquote>
+<h3 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 加载SP文件数据,“my_prefs”为文件名</span></span><br><span class="line">SharedPreferences sp = getSharedPreferences(<span class="string">"my_prefs"</span>, Context.MODE_PRIVATE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 保存数据</span></span><br><span class="line">SharedPreferences.Editor editor = sp.edit();</span><br><span class="line">editor.putString(<span class="string">"blog"</span>, <span class="string">"www.xucanhui.com"</span>);</span><br><span class="line"><span class="comment">// 提交数据：同步方式，有返回值表示数据保存是否成功</span></span><br><span class="line"><span class="keyword">boolean</span> result = editor.commit(); </span><br><span class="line"><span class="comment">// 提交数据：异步方式，没有返回值</span></span><br><span class="line"><span class="comment">// editor.apply()</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 读取数据</span></span><br><span class="line">String blog = sp.getString(<span class="string">"blog"</span>, <span class="string">""</span>);</span><br></pre></td></tr></table></figure>
+<p>my_prefs.xml文件内容：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version='1.0' encoding='utf-8' standalone='yes' ?&gt;</span><br><span class="line"><span class="tag">&lt;<span class="name">map</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">"blog"</span>&gt;</span>www.xucanhui.com<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">map</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><blockquote>
+<p>来源：<a href="http://gityuan.com/2017/06/18/SharedPreferences/" target="_blank" rel="noopener">http://gityuan.com/2017/06/18/SharedPreferences/</a></p>
+</blockquote>
+<h4 id="类图"><a href="#类图" class="headerlink" title="类图"></a>类图</h4><p><img src="/2019/04/18/SharedPreferences-analysis/shared_preference.jpg" alt="shared_preference"></p>
+<p><strong>说明</strong>：SharedPreferences与Editor只是两个接口，SharedPreferencesImpl和EditorImp分别实现了对应的接口。另外，ContextImpl记录着SharedPreferences的重要数据，如下：</p>
+<ul>
+<li>sSharedPrefsCache：以包名为key，二级key是SP文件，以SharedPreferencesImp为value的嵌套map结构，sSharedPrefsCache是静态成员变量，每个进程只有唯一的一份，且由ContextImpl.class锁保护。</li>
+<li>mSharedPrefsPaths：记录所有的SP文件，以文件名为key，具体文件为value的map结构。</li>
+<li>mPreferencesDir：是值SP所在目录，即<code>/data/data/&lt;packageName&gt;/shared_prefs/</code></li>
+</ul>
+<h4 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h4><p><img src="/2019/04/18/SharedPreferences-analysis/shared_preferences_arch.jpg" alt="shared_preferences_arch"></p>
+<p><strong>说明</strong>：</p>
+<ol>
+<li><p>putXxx()操作：把数据写入到EditorImpl.mModified；</p>
+</li>
+<li><p>apply()或者commit()操作：</p>
+<p>a. 先调用<code>commitToMemory()</code>，将数据同步到SharedPreferencesImpl的mMap，并保存到MemoryCommitResult的<code>mapToWriteToDisk</code>；</p>
+<p>b. 再调用<code>enqueueDiskWrite()</code>，写入到磁盘文件；在这之前把原有数据保存到<code>.bak</code>后缀的文件，用于在写磁盘的过程出现任何异常可恢复数据。</p>
+</li>
+<li><p>getXxx()操作：从SharedPreferencesImpl.mMap读取数据。</p>
+</li>
+</ol>
+<h3 id="源码分析-API-28"><a href="#源码分析-API-28" class="headerlink" title="源码分析(API 28)"></a>源码分析(API 28)</h3><h4 id="获取SharedPreferences"><a href="#获取SharedPreferences" class="headerlink" title="获取SharedPreferences"></a>获取SharedPreferences</h4><blockquote>
+<p>可以通过<code>Activity.getPreferences(mode)</code>、<code>PreferenceManager.getDefaultSharedPreferences(context)</code>或者<code>Context.getSharedPreferences(name,mode)</code>来获取SharedPreferences实例，</p>
+<p>最终调用的是ContextImpl的getSharedPreferences(name, mode)。</p>
+</blockquote>
+<p><strong>ContextImpl#getSharedPreferences(name, mode)</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ContextImpl</span> <span class="keyword">extends</span> <span class="title">Context</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@GuardedBy</span>(<span class="string">"ContextImpl.class"</span>)</span><br><span class="line">    <span class="keyword">private</span> ArrayMap&lt;String, File&gt; mSharedPrefsPaths;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> SharedPreferences <span class="title">getSharedPreferences</span><span class="params">(String name, <span class="keyword">int</span> mode)</span> </span>&#123; </span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        </span><br><span class="line">        File file;</span><br><span class="line">        <span class="keyword">synchronized</span> (ContextImpl.class) &#123;</span><br><span class="line">            <span class="keyword">if</span> (mSharedPrefsPaths == <span class="keyword">null</span>) &#123;</span><br><span class="line">                mSharedPrefsPaths = <span class="keyword">new</span> ArrayMap&lt;&gt;();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 先从mSharedPrefsPaths查询是否存在相应文件</span></span><br><span class="line">            file = mSharedPrefsPaths.get(name);</span><br><span class="line">            <span class="keyword">if</span> (file == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果文件不存在，则创建新的文件</span></span><br><span class="line">                file = getSharedPreferencesPath(name);</span><br><span class="line">                <span class="comment">// 将新创建的文件保存到mSharedPrefsPaths，以文件名为key</span></span><br><span class="line">                mSharedPrefsPaths.put(name, file);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> getSharedPreferences(file, mode);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> File <span class="title">getSharedPreferencesPath</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> makeFilename(getPreferencesDir(), name + <span class="string">".xml"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> File <span class="title">getPreferencesDir</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (mSync) &#123;</span><br><span class="line">            <span class="keyword">if</span> (mPreferencesDir == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="comment">// 创建目录/data/data/&lt;packageName&gt;/shared_prefs/</span></span><br><span class="line">                mPreferencesDir = <span class="keyword">new</span> File(getDataDir(), <span class="string">"shared_prefs"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> ensurePrivateDirExists(mPreferencesDir);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>ContextImpl#getSharedPreferences(file, mode)</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> SharedPreferences <span class="title">getSharedPreferences</span><span class="params">(File file, <span class="keyword">int</span> mode)</span> </span>&#123;</span><br><span class="line">    SharedPreferencesImpl sp;</span><br><span class="line">    <span class="keyword">synchronized</span> (ContextImpl.class) &#123;</span><br><span class="line">        <span class="keyword">final</span> ArrayMap&lt;File, SharedPreferencesImpl&gt; cache = getSharedPreferencesCacheLocked();</span><br><span class="line">        sp = cache.get(file);</span><br><span class="line">        <span class="keyword">if</span> (sp == <span class="keyword">null</span>) &#123;</span><br><span class="line">            checkMode(mode);</span><br><span class="line">            <span class="keyword">if</span> (getApplicationInfo().targetSdkVersion &gt;= android.os.Build.VERSION_CODES.O) &#123;</span><br><span class="line">                <span class="keyword">if</span> (isCredentialProtectedStorage()</span><br><span class="line">                    &amp;&amp; !getSystemService(UserManager.class)</span><br><span class="line">                    .isUserUnlockingOrUnlocked(UserHandle.myUserId())) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"SharedPreferences in credential encrypted "</span></span><br><span class="line">                                                    + <span class="string">"storage are not available until after user is unlocked"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 创建SharedPreferencesImpl</span></span><br><span class="line">            sp = <span class="keyword">new</span> SharedPreferencesImpl(file, mode);</span><br><span class="line">            cache.put(file, sp);</span><br><span class="line">            <span class="keyword">return</span> sp;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 指定多进程模式，则当文件被其他进程改变是，则会重新加载</span></span><br><span class="line">    <span class="keyword">if</span> ((mode &amp; Context.MODE_MULTI_PROCESS) != <span class="number">0</span> ||</span><br><span class="line">        getApplicationInfo().targetSdkVersion &lt; android.os.Build.VERSION_CODES.HONEYCOMB) &#123;</span><br><span class="line">        <span class="comment">// If somebody else (some other process) changed the prefs</span></span><br><span class="line">        <span class="comment">// file behind our back, we reload it.  This has been the</span></span><br><span class="line">        <span class="comment">// historical (if undocumented) behavior.</span></span><br><span class="line">        sp.startReloadIfChangedUnexpectedly();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> sp;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@GuardedBy</span>(<span class="string">"ContextImpl.class"</span>)</span><br><span class="line"><span class="function"><span class="keyword">private</span> ArrayMap&lt;File, SharedPreferencesImpl&gt; <span class="title">getSharedPreferencesCacheLocked</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (sSharedPrefsCache == <span class="keyword">null</span>) &#123;</span><br><span class="line">        sSharedPrefsCache = <span class="keyword">new</span> ArrayMap&lt;&gt;();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> String packageName = getPackageName();</span><br><span class="line">    ArrayMap&lt;File, SharedPreferencesImpl&gt; packagePrefs = sSharedPrefsCache.get(packageName);</span><br><span class="line">    <span class="keyword">if</span> (packagePrefs == <span class="keyword">null</span>) &#123;</span><br><span class="line">        packagePrefs = <span class="keyword">new</span> ArrayMap&lt;&gt;();</span><br><span class="line">        sSharedPrefsCache.put(packageName, packagePrefs);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> packagePrefs;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>SharedPreferencesImpl初始化</strong>：</p>
+<p><strong>SharedPreferencesImpl.java</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">SharedPreferencesImpl(File file, <span class="keyword">int</span> mode) &#123;</span><br><span class="line">    mFile = file;</span><br><span class="line">    <span class="comment">// 创建.bak后缀的备份文件，用于在发生异常时，可以通过备份文件来恢复数据</span></span><br><span class="line">    mBackupFile = makeBackupFile(file);</span><br><span class="line">    mMode = mode;</span><br><span class="line">    mLoaded = <span class="keyword">false</span>;</span><br><span class="line">    mMap = <span class="keyword">null</span>;</span><br><span class="line">    mThrowable = <span class="keyword">null</span>;</span><br><span class="line">    startLoadFromDisk();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>SharedPreferencesImpl#startLoadFromDisk()</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">startLoadFromDisk</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">        mLoaded = <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 通过工作线程读取文件数据到mMap</span></span><br><span class="line">    <span class="keyword">new</span> Thread(<span class="string">"SharedPreferencesImpl-load"</span>) &#123;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            loadFromDisk();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;.start();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">loadFromDisk</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">        <span class="keyword">if</span> (mLoaded) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (mBackupFile.exists()) &#123;</span><br><span class="line">            mFile.delete();</span><br><span class="line">            mBackupFile.renameTo(mFile);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Debugging</span></span><br><span class="line">    <span class="keyword">if</span> (mFile.exists() &amp;&amp; !mFile.canRead()) &#123;</span><br><span class="line">        Log.w(TAG, <span class="string">"Attempt to read preferences file "</span> + mFile + <span class="string">" without permission"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, Object&gt; map = <span class="keyword">null</span>;</span><br><span class="line">    StructStat stat = <span class="keyword">null</span>;</span><br><span class="line">    Throwable thrown = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        stat = Os.stat(mFile.getPath());</span><br><span class="line">        <span class="keyword">if</span> (mFile.canRead()) &#123;</span><br><span class="line">            BufferedInputStream str = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                str = <span class="keyword">new</span> BufferedInputStream(</span><br><span class="line">                    <span class="keyword">new</span> FileInputStream(mFile), <span class="number">16</span> * <span class="number">1024</span>);</span><br><span class="line">                map = (Map&lt;String, Object&gt;) XmlUtils.readMapXml(str);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                Log.w(TAG, <span class="string">"Cannot read "</span> + mFile.getAbsolutePath(), e);</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                IoUtils.closeQuietly(str);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (ErrnoException e) &#123;</span><br><span class="line">        <span class="comment">// An errno exception means the stat failed. Treat as empty/non-existing by</span></span><br><span class="line">        <span class="comment">// ignoring.</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        thrown = t;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">        mLoaded = <span class="keyword">true</span>;</span><br><span class="line">        mThrowable = thrown;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// It's important that we always signal waiters, even if we'll make</span></span><br><span class="line">        <span class="comment">// them fail with an exception. The try-finally is pretty wide, but</span></span><br><span class="line">        <span class="comment">// better safe than sorry.</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (thrown == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">if</span> (map != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    mMap = map;</span><br><span class="line">                    mStatTimestamp = stat.st_mtim;</span><br><span class="line">                    mStatSize = stat.st_size;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    mMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// In case of a thrown exception, we retain the old map. That allows</span></span><br><span class="line">            <span class="comment">// any open editors to commit and store updates.</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            mThrowable = t;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            mLock.notifyAll();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><strong>获取SharedPreferences总结</strong>：</p>
+<ol>
+<li>首次使用则创建相应xml文件；</li>
+<li>异步加载文件内容到内存，此时执行getXxx()和edit()方法都是阻塞等待的，直到文件数据全部加载到内存；</li>
+<li>一旦数据完全加载到内存，后续的getXxx()则是直接访问内存。</li>
+</ol>
+</blockquote>
+<h4 id="获取数据"><a href="#获取数据" class="headerlink" title="获取数据"></a>获取数据</h4><p><strong>SharedPreferencesImpl#getString(key, defValue)</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getString</span><span class="params">(String key, @Nullable String defValue)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">        <span class="comment">// 检查数据是否加载完成</span></span><br><span class="line">        awaitLoadedLocked();</span><br><span class="line">        String v = (String)mMap.get(key);</span><br><span class="line">        <span class="keyword">return</span> v != <span class="keyword">null</span> ? v : defValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">awaitLoadedLocked</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!mLoaded) &#123;</span><br><span class="line">        BlockGuard.getThreadPolicy().onReadFromDisk();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> (!mLoaded) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 当没有加载完成，则进入等待状态</span></span><br><span class="line">            mLock.wait();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException unused) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mThrowable != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(mThrowable);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="编辑数据"><a href="#编辑数据" class="headerlink" title="编辑数据"></a>编辑数据</h4><p>获取Editor编辑器实例：<code>SharedPreferencesImpl#edit()</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Editor <span class="title">edit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">        <span class="comment">// 等待数据加载完成</span></span><br><span class="line">        awaitLoadedLocked();</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="comment">// 创建EditorImpl实例</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> EditorImpl();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>EditorImpl#putString(key, value)</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">EditorImpl</span> <span class="keyword">implements</span> <span class="title">Editor</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@GuardedBy</span>(<span class="string">"mEditorLock"</span>)</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, Object&gt; mModified = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@GuardedBy</span>(<span class="string">"mEditorLock"</span>)</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> mClear = <span class="keyword">false</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">	<span class="comment">// 插入数据</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Editor <span class="title">putString</span><span class="params">(String key, @Nullable String value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (mEditorLock) &#123;</span><br><span class="line">            <span class="comment">// 插入数据，暂存到mModified</span></span><br><span class="line">            mModified.put(key, value);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 移除数据</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Editor <span class="title">remove</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (mEditorLock) &#123;</span><br><span class="line">            mModified.put(key, <span class="keyword">this</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 清空全部数据</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Editor <span class="title">clear</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (mEditorLock) &#123;</span><br><span class="line">            mClear = <span class="keyword">true</span>;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="保存数据"><a href="#保存数据" class="headerlink" title="保存数据"></a>保存数据</h4><blockquote>
+<p>保存数据，主要是调用<code>commit()</code>和<code>apply()</code>方法来完成的。</p>
+</blockquote>
+<p><strong>EditorImpl#commit()</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">commit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将数据更新到内存</span></span><br><span class="line">    MemoryCommitResult mcr = commitToMemory();</span><br><span class="line">    <span class="comment">// 将内存数据同步到文件</span></span><br><span class="line">    SharedPreferencesImpl.<span class="keyword">this</span>.enqueueDiskWrite(</span><br><span class="line">        mcr, <span class="keyword">null</span> <span class="comment">/* sync write on this thread okay */</span>);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 进入等待状态，直到写入文件的操作完成</span></span><br><span class="line">        mcr.writtenToDiskLatch.await();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 通知监听器，并在主线程回调onSharedPreferenceChanged()方法</span></span><br><span class="line">    notifyListeners(mcr);</span><br><span class="line">    <span class="comment">// 返回文件操作的结果</span></span><br><span class="line">    <span class="keyword">return</span> mcr.writeToDiskResult;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>EditorImpl#commitToMemory()</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> MemoryCommitResult <span class="title">commitToMemory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> memoryStateGeneration;</span><br><span class="line">    List&lt;String&gt; keysModified = <span class="keyword">null</span>;</span><br><span class="line">    Set&lt;OnSharedPreferenceChangeListener&gt; listeners = <span class="keyword">null</span>;</span><br><span class="line">    Map&lt;String, Object&gt; mapToWriteToDisk;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">synchronized</span> (SharedPreferencesImpl.<span class="keyword">this</span>.mLock) &#123;</span><br><span class="line">        <span class="keyword">if</span> (mDiskWritesInFlight &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            mMap = <span class="keyword">new</span> HashMap&lt;String, Object&gt;(mMap);</span><br><span class="line">        &#125;</span><br><span class="line">        mapToWriteToDisk = mMap;</span><br><span class="line">        mDiskWritesInFlight++;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">boolean</span> hasListeners = mListeners.size() &gt; <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (hasListeners) &#123;</span><br><span class="line">            keysModified = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">            listeners = <span class="keyword">new</span> HashSet&lt;OnSharedPreferenceChangeListener&gt;(mListeners.keySet());</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">synchronized</span> (mEditorLock) &#123;</span><br><span class="line">            <span class="keyword">boolean</span> changesMade = <span class="keyword">false</span>;</span><br><span class="line">			<span class="comment">// 当mClear为true，则直接清空mMap</span></span><br><span class="line">            <span class="keyword">if</span> (mClear) &#123;</span><br><span class="line">                <span class="keyword">if</span> (!mapToWriteToDisk.isEmpty()) &#123;</span><br><span class="line">                    changesMade = <span class="keyword">true</span>;</span><br><span class="line">                    mapToWriteToDisk.clear();</span><br><span class="line">                &#125;</span><br><span class="line">                mClear = <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (Map.Entry&lt;String, Object&gt; e : mModified.entrySet()) &#123;</span><br><span class="line">                String k = e.getKey();</span><br><span class="line">                Object v = e.getValue();</span><br><span class="line">               	<span class="comment">// this是一个特殊值，当v为空，相当于remove该条数据</span></span><br><span class="line">                <span class="keyword">if</span> (v == <span class="keyword">this</span> || v == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (!mapToWriteToDisk.containsKey(k)) &#123;</span><br><span class="line">                        <span class="keyword">continue</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    mapToWriteToDisk.remove(k);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (mapToWriteToDisk.containsKey(k)) &#123;</span><br><span class="line">                        Object existingValue = mapToWriteToDisk.get(k);</span><br><span class="line">                        <span class="keyword">if</span> (existingValue != <span class="keyword">null</span> &amp;&amp; existingValue.equals(v)) &#123;</span><br><span class="line">                            <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    mapToWriteToDisk.put(k, v);</span><br><span class="line">                &#125;</span><br><span class="line">				<span class="comment">// 表示数据有改变</span></span><br><span class="line">                changesMade = <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">if</span> (hasListeners) &#123;</span><br><span class="line">                    keysModified.add(k);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">			<span class="comment">// 清空mModified的数据</span></span><br><span class="line">            mModified.clear();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (changesMade) &#123;</span><br><span class="line">                mCurrentMemoryStateGeneration++;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            memoryStateGeneration = mCurrentMemoryStateGeneration;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> MemoryCommitResult(memoryStateGeneration, keysModified, listeners,</span><br><span class="line">                                  mapToWriteToDisk);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>EditorImpl#enqueueDiskWrite()</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">enqueueDiskWrite</span><span class="params">(<span class="keyword">final</span> MemoryCommitResult mcr,</span></span></span><br><span class="line"><span class="function"><span class="params">                              <span class="keyword">final</span> Runnable postWriteRunnable)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> isFromSyncCommit = (postWriteRunnable == <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> Runnable writeToDiskRunnable = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (mWritingToDiskLock) &#123;</span><br><span class="line">                <span class="comment">// 执行文件写入操作</span></span><br><span class="line">                writeToFile(mcr, isFromSyncCommit);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">                mDiskWritesInFlight--;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (postWriteRunnable != <span class="keyword">null</span>) &#123;</span><br><span class="line">                postWriteRunnable.run();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用commit方法，会进入这个分支，在当前线程执行</span></span><br><span class="line">    <span class="keyword">if</span> (isFromSyncCommit) &#123;</span><br><span class="line">        <span class="keyword">boolean</span> wasEmpty = <span class="keyword">false</span>;</span><br><span class="line">        <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">            wasEmpty = mDiskWritesInFlight == <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (wasEmpty) &#123;</span><br><span class="line">            writeToDiskRunnable.run();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用apply方法，会执行该句，将任务放入单线程的线程池中执行</span></span><br><span class="line">    QueuedWork.queue(writeToDiskRunnable, !isFromSyncCommit);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>EditorImpl#writeToFile()</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeToFile</span><span class="params">(MemoryCommitResult mcr, <span class="keyword">boolean</span> isFromSyncCommit)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> fileExists = mFile.exists();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (fileExists) &#123;</span><br><span class="line">        <span class="keyword">boolean</span> needsWrite = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Only need to write if the disk state is older than this commit</span></span><br><span class="line">        <span class="keyword">if</span> (mDiskStateGeneration &lt; mcr.memoryStateGeneration) &#123;</span><br><span class="line">            <span class="keyword">if</span> (isFromSyncCommit) &#123;</span><br><span class="line">                needsWrite = <span class="keyword">true</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">                    <span class="comment">// No need to persist intermediate states. Just wait for the latest state to</span></span><br><span class="line">                    <span class="comment">// be persisted.</span></span><br><span class="line">                    <span class="keyword">if</span> (mCurrentMemoryStateGeneration == mcr.memoryStateGeneration) &#123;</span><br><span class="line">                        needsWrite = <span class="keyword">true</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 没有改变，直接返回</span></span><br><span class="line">        <span class="keyword">if</span> (!needsWrite) &#123;</span><br><span class="line">            mcr.setDiskWriteResult(<span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">boolean</span> backupFileExists = mBackupFile.exists();</span><br><span class="line">        <span class="keyword">if</span> (!backupFileExists) &#123;</span><br><span class="line">            <span class="comment">// 当备份文件不存在，则把mFile重命名为备份文件</span></span><br><span class="line">            <span class="keyword">if</span> (!mFile.renameTo(mBackupFile)) &#123;</span><br><span class="line">                Log.e(TAG, <span class="string">"Couldn't rename file "</span> + mFile</span><br><span class="line">                      + <span class="string">" to backup file "</span> + mBackupFile);</span><br><span class="line">                mcr.setDiskWriteResult(<span class="keyword">false</span>, <span class="keyword">false</span>);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 否则，直接删除mFile</span></span><br><span class="line">            mFile.delete();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        FileOutputStream str = createFileOutputStream(mFile);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (str == <span class="keyword">null</span>) &#123;</span><br><span class="line">            mcr.setDiskWriteResult(<span class="keyword">false</span>, <span class="keyword">false</span>);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 将mMap全部信息写入文件</span></span><br><span class="line">        XmlUtils.writeMapXml(mcr.mapToWriteToDisk, str);</span><br><span class="line"></span><br><span class="line">        writeTime = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">        FileUtils.sync(str);</span><br><span class="line"></span><br><span class="line">        fsyncTime = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">        str.close();</span><br><span class="line">        ContextImpl.setFilePermissionsFromMode(mFile.getPath(), mMode, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">final</span> StructStat stat = Os.stat(mFile.getPath());</span><br><span class="line">            <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">                mStatTimestamp = stat.st_mtim;</span><br><span class="line">                mStatSize = stat.st_size;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ErrnoException e) &#123;</span><br><span class="line">            <span class="comment">// Do nothing</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (DEBUG) &#123;</span><br><span class="line">            fstatTime = System.currentTimeMillis();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 写入成功，删除备份文件</span></span><br><span class="line">        mBackupFile.delete();</span><br><span class="line"></span><br><span class="line">        mDiskStateGeneration = mcr.memoryStateGeneration;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 返回写入成功，唤醒等待线程</span></span><br><span class="line">        mcr.setDiskWriteResult(<span class="keyword">true</span>, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (XmlPullParserException e) &#123;</span><br><span class="line">        Log.w(TAG, <span class="string">"writeToFile: Got exception:"</span>, e);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        Log.w(TAG, <span class="string">"writeToFile: Got exception:"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果文件写入操作失败，则删除未成功写入的文件</span></span><br><span class="line">    <span class="keyword">if</span> (mFile.exists()) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!mFile.delete()) &#123;</span><br><span class="line">            Log.e(TAG, <span class="string">"Couldn't clean up partially-written file "</span> + mFile);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 返回写入失败，唤醒等待线程</span></span><br><span class="line">    mcr.setDiskWriteResult(<span class="keyword">false</span>, <span class="keyword">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>EditorImpl#apply()</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">apply</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 把数据更新到内存</span></span><br><span class="line">    <span class="keyword">final</span> MemoryCommitResult mcr = commitToMemory();</span><br><span class="line">    <span class="keyword">final</span> Runnable awaitCommit = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">// 进入等待状态</span></span><br><span class="line">                mcr.writtenToDiskLatch.await();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException ignored) &#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    QueuedWork.addFinisher(awaitCommit);</span><br><span class="line"></span><br><span class="line">    Runnable postWriteRunnable = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            awaitCommit.run();</span><br><span class="line">            QueuedWork.removeFinisher(awaitCommit);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将数据以异步的方式写入文件</span></span><br><span class="line">    SharedPreferencesImpl.<span class="keyword">this</span>.enqueueDiskWrite(mcr, postWriteRunnable);</span><br><span class="line"></span><br><span class="line">    notifyListeners(mcr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h3><h4 id="IO瓶颈"><a href="#IO瓶颈" class="headerlink" title="IO瓶颈"></a>IO瓶颈</h4><blockquote>
+<p>IO瓶颈是造成SP性能差的最大原因，解决IO瓶颈，80%的性能问题就解决了。</p>
+</blockquote>
+<p>SP的IO瓶颈包括<code>读取数据到内存</code>与<code>数据写入磁盘</code>两部分。</p>
+<ol>
+<li><p>读取数据到内存有两个场景会触发：</p>
+<p>a. SP文件没有被加载到内存时，调用getSharedPreferences方法会初始化文件并读入内存。</p>
+<p>b. 版本低于Android-H或使用了MULTI_PROCESS标记时，每次调用getSharedPreference方法时都会读入。</p>
+<p><strong>优化</strong>：</p>
+<blockquote>
+<p>我们可以优化的便是b了，每次加载数据到内存太过影响效率，但H以下版本已经很低了，基本可以忽略。</p>
+<p>对于MULTI_PROCESS，可以采用ContentProvider等其他方式，效率更好，而且可避免SP数据丢失的情况。</p>
+</blockquote>
+</li>
+<li><p>数据写入到磁盘也有两个场景会触发：</p>
+<p>a. Editor的commit方法，每次执行时同步写入磁盘。</p>
+<p>b. Editor的apply方法，每次执行时在单线程池中写入磁盘，异步写入。</p>
+<p><strong>优化</strong>：</p>
+<blockquote>
+<p>commit和apply的方法区别在于同步写入和异步写入，以及是否需要返回值。</p>
+<p>在不需要返回值的情况下，使用apply方法可以极大的提高性能。</p>
+<p>同时，多个写入操作可以合并为一个commit/apply，将多个写入操作合并后也能提高IO性能。</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="锁性能差"><a href="#锁性能差" class="headerlink" title="锁性能差"></a>锁性能差</h4><ol>
+<li><p>SP的get操作，会锁定SharedPreferences对象，互斥其他操作。</p>
+</li>
+<li><p>SP的put操作，edit()及commitToMemory会锁定SharedPreferences对象，put操作会锁定Editor对象，写入磁盘更会锁定一个写入锁。</p>
+</li>
+</ol>
+<p><strong>优化</strong>：</p>
+<blockquote>
+<p>由于锁的缘故，SP操作并发时，耗时会增加。减少锁耗时，是一个优化点。</p>
+<p>由于读写操作的锁均是SP实例对象的，将数据分拆到不同的sp文件中，便是减少锁耗时的直接方案。</p>
+<p>降低单文件访问频率，多文件均摊访问，以减少锁耗时。</p>
+</blockquote>
+<h4 id="优化总结"><a href="#优化总结" class="headerlink" title="优化总结"></a>优化总结</h4><blockquote>
+<ul>
+<li>强烈建议不要在sp里面存储特别大的key/value, 有助于减少卡顿/anr；</li>
+<li>请不要高频地使用apply, 尽可能地批量提交;commit直接在主线程操作, 更要注意了；</li>
+<li>不要使用MODE_MULTI_PROCESS；</li>
+<li>高频写操作的key与高频读操作的key可以适当地拆分文件, 由于减少同步锁竞争；</li>
+<li>不要一上来就执行getSharedPreferences().edit(), 应该分成两大步骤来做, 中间可以执行其他代码；</li>
+<li>不要连续多次edit(), 应该获取一次获取edit(),然后多次执行putxxx(), 减少内存波动; 经常看到大家喜欢封装方法, 结果就导致这种情况的出现；</li>
+<li>每次commit时会把全部的数据更新的文件, 所以整个文件是不应该过大的, 影响整体性能。</li>
+</ul>
+</blockquote>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
+<li><a href="https://developer.android.com/reference/android/content/SharedPreferences.html" target="_blank" rel="noopener">SharedPreferences</a></li>
+<li><a href="http://gityuan.com/2017/06/18/SharedPreferences/" target="_blank" rel="noopener">全面剖析SharedPreferences</a></li>
+<li><a href="https://www.cnblogs.com/puff/p/5530825.html" target="_blank" rel="noopener">SharedPreferences优化总结</a></li>
+<li><a href="https://yakivmospan.com/blog/best-practice-shared-preferences/" target="_blank" rel="noopener">Best Practice - SharedPreferences</a></li>
+<li><a href="https://stackoverflow.com/questions/6276358/pros-and-cons-of-sqlite-and-shared-preferences" target="_blank" rel="noopener">Pros and Cons of SQLite and Shared Preferences</a></li>
+<li><a href="https://www.jianshu.com/p/40e42da910e2" target="_blank" rel="noopener">庖丁解牛之SharedPreferences超级大卡顿</a></li>
+</ol>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2019/04/18/SharedPreferences-analysis/">SharedPreferences解析</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
+        <p><span>发布时间:</span>2019-04-18, 20:27:07</p>
+        <p><span>最后更新:</span>2019-04-23, 07:15:37</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2019/04/18/SharedPreferences-analysis/" title="SharedPreferences解析">https://xch168.github.io/2019/04/18/SharedPreferences-analysis/</a>
+            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2019/04/18/SharedPreferences-analysis/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2019/04/23/ThreadLocal-analysis/">
+                    ThreadLocal 解析
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2019/04/12/AsyncTask-analysis/">
+                    AsyncTask解析
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用示例"><span class="toc-number">2.</span> <span class="toc-text">使用示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#架构"><span class="toc-number">3.</span> <span class="toc-text">架构</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#类图"><span class="toc-number">3.1.</span> <span class="toc-text">类图</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#工作流程"><span class="toc-number">3.2.</span> <span class="toc-text">工作流程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#源码分析-API-28"><span class="toc-number">4.</span> <span class="toc-text">源码分析(API 28)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#获取SharedPreferences"><span class="toc-number">4.1.</span> <span class="toc-text">获取SharedPreferences</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#获取数据"><span class="toc-number">4.2.</span> <span class="toc-text">获取数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#编辑数据"><span class="toc-number">4.3.</span> <span class="toc-text">编辑数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#保存数据"><span class="toc-number">4.4.</span> <span class="toc-text">保存数据</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#性能优化"><span class="toc-number">5.</span> <span class="toc-text">性能优化</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#IO瓶颈"><span class="toc-number">5.1.</span> <span class="toc-text">IO瓶颈</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#锁性能差"><span class="toc-number">5.2.</span> <span class="toc-text">锁性能差</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#优化总结"><span class="toc-number">5.3.</span> <span class="toc-text">优化总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">6.</span> <span class="toc-text">参考链接</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn,
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+<script>
+    yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+</script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"SharedPreferences解析　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <div class="gitalk">
+    <div id="gitalk-container"></div>
+    <script type="text/javascript">
+        const gitalk = new Gitalk({
+            clientID: 'c0b6df40419bff056b0a',
+            clientSecret: 'fcba9fe67a42251e97d1e4f8a75573e55051a007',
+            repo: 'xch168.github.io',
+            owner: 'xch168',
+            admin: ['xch168'],
+            id: location.pathname,      // Ensure uniqueness and length less than 50
+            distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2019/04/23/ThreadLocal-analysis/" title="上一篇: ThreadLocal 解析">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2019/04/12/AsyncTask-analysis/" title="下一篇: AsyncTask解析">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2019/04/23/ThreadLocal-analysis/">ThreadLocal 解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/04/18/SharedPreferences-analysis/">SharedPreferences解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/04/12/AsyncTask-analysis/">AsyncTask解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/04/02/IntentService-analysis/">IntentService解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/19/HandlerThread-analysis/">HandlerThread解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/18/BlockCanary-analysis/">BlockCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/16/android-handler/">Android消息机制——Handler</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/03/09/android-anr-analysis/">Android应用ANR分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/24/android-oom-analysis/">Android OOM分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/02/22/leakcanary-principle-analysis/">LeakCanary原理分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/31/android-memory-leak-analysis/">Android内存泄漏分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/28/android-hotfix-principle-analysis/">Android热修复原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/27/android-plugin-principle-analysis/">Android插件化原理解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/08/android-hook/">Hook技术</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/android-classloader/">ClassLoader解析（二）：Android中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/01/05/java-classloader/">ClassLoader解析（一）：Java中的ClassLoader</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/29/android-findbugs-plugin-usage/">使用FindBugs插件检查Android代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/15/android-travis-ci/">基于Travis CI的Android项目自动构建流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/10/use-checkstyle-for-better-code-style/">使用Checkstyle规范代码</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/12/01/java-transient/">Java中的transient关键字</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/30/android-parcelable-serializable/">Android中的序列化：Parcelable和Serializable</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/23/android-6-0-permission/">Android6.0运行时权限处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/10/Android-Studio-custom-code-template/">在Android Studio中自定义代码模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/08/RecyclerView-best-practices/">RecyclerView性能优化</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/02/android-ffmpeg-logcat/">在Android logcat中打印FFmpeg调试信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/26/android-invoke-ffmpeg-cmd/">在Android项目中调用FFmpeg命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/13/Efficient-loading-bitmap/">高效地加载Bitmap</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/27/android-apk-shelling/">Android APK脱壳--腾讯乐固、360加固一键脱壳</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/DiskLruCache-analyze/">DiskLruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/23/LruCache-analyze/">LruCache解析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-crash-handler/">Android全局异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/android-size-unit/">Android中的单位(dp、sp、dpi)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/09/09/ConstraintLayout-usage/">ConstraintLayout(约束布局)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/26/java-annotation-processor/">Java注解处理器</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/25/java-annotation/">Java注解Annotation</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/18/java-dynamic-proxy/">Java动态代理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/04/android-ndk-compile-ffmpeg-to-a-so/">将FFmpeg编译成一个libffmpeg.so库</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-ffmpeg-compile/">Android NDK交叉编译FFmpeg</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-apk-incremental-update/">Android NDK开发-APK增量更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/22/android-ndk-exception-handle/">Android NDK开发-异常处理</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/15/android-ndk-lldb-debug/">Android NDK开发-LLDB调试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/04/android-ndk-cmake/">Android NDK开发-CMake</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/01/android-ndk-environment/">Android NDK开发-环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/17/use-lint-analyse-code/">使用Lint进行静态代码分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/09/android-tools-attributes-use/">Android中tools属性的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/28/clip-children/">Android中一个很有用的属性——clipChildren</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/20/apktool-dex2jar-jd/">Android反编译：Apktool、dex2jar、JD-GUI的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/13/android-garble-proguard/">Android代码混淆——Proguard</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/05/06/uiautomator-use/">使用UI Automator实现Android UI的自动化测试</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/21/adb-commands/">adb常用命令</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/08/skill-for-advanced-android-development-engineers/">高级Android开发工程师必备技能</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/23/use-bintray-release-publish-lib-to-jcenter/">使用bintray-release快速发布库到JCenter</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/05/android-performance-patterns/">Android性能优化典范</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2019 辉天神龙
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >本站到访数: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">本页阅读量: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

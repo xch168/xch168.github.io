@@ -291,6 +291,136 @@
 </nav>
       <div class="body-wrap">
   
+    <article id="post-android-crash-handler" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/09/09/android-crash-handler/" class="article-date">
+      <time datetime="2018-09-09T15:32:35.000Z" itemprop="datePublished">2018-09-09</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/09/09/android-crash-handler/">Android全局异常处理</a>
+    </h1>
+  
+
+      </header>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+              <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p>当Android应用程序出现未捕获的异常，都会弹出一个强制退出的弹框，在这种情况下，用户体验非常差。且发布到线上后，开发没法定位Bug的位置，这就需要一个能全局捕获异常，并且将这个异常log上传到服务器的功能。</p>
+</blockquote>
+          
+      
+    </div>
+    
+    <div class="article-info article-info-index">
+      
+      
+
+      
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li></ul>
+    </div>
+
+      
+        <p class="article-more-link">
+          <a href="/2018/09/09/android-crash-handler/#more">阅读全文 >></a>
+        </p>
+      
+      <div class="clearfix"></div>
+    </div>
+    
+  </div>
+  
+</article>
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-android-size-unit" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/09/09/android-size-unit/" class="article-date">
+      <time datetime="2018-09-09T15:14:00.000Z" itemprop="datePublished">2018-09-09</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/09/09/android-size-unit/">Android中的单位(dp、sp、dpi)</a>
+    </h1>
+  
+
+      </header>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+              <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p>因为不同的屏幕具有不同的像素密度，因此同样数量的像素在不同设备上可能对应于不同的物理尺寸。因此要使用<code>dp</code>和<code>sp</code>单位。</p>
+<p><code>dp</code>：是一种密度无关像素，对应于160dpi下像素的物理尺寸。</p>
+<p><code>sp</code>：是相同的基本单位，但它会按用户首选的文本尺寸进行缩放（属于缩放无关像素），因此在定义文本尺寸时应使用此计量单位(但切勿为布局尺寸使用此单位)。</p>
+</blockquote>
+          
+      
+    </div>
+    
+    <div class="article-info article-info-index">
+      
+      
+
+      
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li></ul>
+    </div>
+
+      
+        <p class="article-more-link">
+          <a href="/2018/09/09/android-size-unit/#more">阅读全文 >></a>
+        </p>
+      
+      <div class="clearfix"></div>
+    </div>
+    
+  </div>
+  
+</article>
+
+
+
+
+
+
+
+
+
+  
     <article id="post-ConstraintLayout-usage" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
@@ -791,134 +921,6 @@
       
         <p class="article-more-link">
           <a href="/2018/07/22/android-ndk-exception-handle/#more">阅读全文 >></a>
-        </p>
-      
-      <div class="clearfix"></div>
-    </div>
-    
-  </div>
-  
-</article>
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-android-ndk-lldb-debug" class="article article-type-post" itemscope itemprop="blogPost">
-  
-    <div class="article-meta">
-      <a href="/2018/07/15/android-ndk-lldb-debug/" class="article-date">
-      <time datetime="2018-07-15T03:53:32.000Z" itemprop="datePublished">2018-07-15</time>
-</a>
-    </div>
-  
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/07/15/android-ndk-lldb-debug/">Android NDK开发-LLDB调试</a>
-    </h1>
-  
-
-      </header>
-      
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-          
-              <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
-<p>LLDB是一个高效的C/C++调试器，与LLVM编译器一起使用，提供了丰富的流程控制和数据监测，有效的帮助我们调试程序。</p>
-</blockquote>
-          
-      
-    </div>
-    
-    <div class="article-info article-info-index">
-      
-      
-
-      
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NDK/">NDK</a></li></ul>
-    </div>
-
-      
-        <p class="article-more-link">
-          <a href="/2018/07/15/android-ndk-lldb-debug/#more">阅读全文 >></a>
-        </p>
-      
-      <div class="clearfix"></div>
-    </div>
-    
-  </div>
-  
-</article>
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-android-ndk-jni" class="article article-type-post" itemscope itemprop="blogPost">
-  
-    <div class="article-meta">
-      <a href="/2018/07/08/android-ndk-jni/" class="article-date">
-      <time datetime="2018-07-08T07:36:23.000Z" itemprop="datePublished">2018-07-08</time>
-</a>
-    </div>
-  
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/07/08/android-ndk-jni/">Android NDK开发-JNI</a>
-    </h1>
-  
-
-      </header>
-      
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-          
-              <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
-<p>JNI（Java Native Interface）：Java本地接口。是为了方便使用Java调用C、C++等本地代码所封装的一层接口。大家都知道，Java的优点是跨平台，但是作为优点的同时，其在本地交互的时候就变成了缺点。Java的跨平台特性导致其本地交互的能力不够强大，一些和操作系统相关的特性Java无法完成，于是Java提供了JNI专门用于和本地代码交互，这样就增强了Java语言的本地交互能力。</p>
-</blockquote>
-          
-      
-    </div>
-    
-    <div class="article-info article-info-index">
-      
-      
-
-      
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NDK/">NDK</a></li></ul>
-    </div>
-
-      
-        <p class="article-more-link">
-          <a href="/2018/07/08/android-ndk-jni/#more">阅读全文 >></a>
         </p>
       
       <div class="clearfix"></div>
