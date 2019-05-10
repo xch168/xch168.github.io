@@ -59,6 +59,18 @@ public class ThreadLocalTest {
 // 从上述结果看出，在2个线程分别设置ThreadLocal值和分别获取值，结果互不干扰。
 ```
 
+### ThreadLocal的引用关系
+
+![ThreadLocal-ref](ThreadLocal-analysis/ThreadLocal-ref.png)
+
+>**关系说明：**
+>
+>- 1个Thread有且仅有1个ThreadLocalMap对象；
+>- 1个Entry对象的Key弱引用指向1个ThreadLocal对象；
+>- 1个ThreadLocalMap对象存储多个Entry对象；
+>- 1个ThreadLocal对象可以被多个线程所共享；
+>- ThreadLocal对象不持有Value，Value由线程的Entry对象持有。
+
 ### 源码解析（API 28）
 
 #### ThreadLocal#set()
