@@ -15,21 +15,18 @@
 
 
 
-<meta name="description" content="概述 在Java中，一个类只要实现Serializable接口，这个类的对象就可以被序列化，这种序列化模式为开发者提供了很多便利，我们可以不必关心具体序列化的过程，只要这个类实现了Serializable接口，这个类的所有属性都会自动序列化。但是有时我们需要让类的某些属性不被序列化，如密码这类信息，为了安全起见，不希望在网络操作中被传输或者持久化到本地。只要在相应的属性前加上transient关键">
-<meta name="keywords" content="Java">
+<meta name="description" content="概述 在Android的Activity中，我们使用onSaveInstanceState(Bundle outState)方法来保存当前界面的UI数据，防止在内存不够时，该Activity被系统销毁，用户重新回到该界面时界面没有数据，造成不好的用户体验。我们可以在onCreate(Bundle)或者onRestoreInstanceState(Bundle)中去恢复UI数据。 那么问题来了，on">
+<meta name="keywords" content="Android">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java中的transient关键字">
-<meta property="og:url" content="https://xch168.github.io/2018/12/01/java-transient/index.html">
+<meta property="og:title" content="重识onSaveInstanceState方法的调用时间">
+<meta property="og:url" content="https://xch168.github.io/2020/09/19/Understanding-onSaveInstanceState-call-times/index.html">
 <meta property="og:site_name" content="辉天神龙">
-<meta property="og:description" content="概述 在Java中，一个类只要实现Serializable接口，这个类的对象就可以被序列化，这种序列化模式为开发者提供了很多便利，我们可以不必关心具体序列化的过程，只要这个类实现了Serializable接口，这个类的所有属性都会自动序列化。但是有时我们需要让类的某些属性不被序列化，如密码这类信息，为了安全起见，不希望在网络操作中被传输或者持久化到本地。只要在相应的属性前加上transient关键">
+<meta property="og:description" content="概述 在Android的Activity中，我们使用onSaveInstanceState(Bundle outState)方法来保存当前界面的UI数据，防止在内存不够时，该Activity被系统销毁，用户重新回到该界面时界面没有数据，造成不好的用户体验。我们可以在onCreate(Bundle)或者onRestoreInstanceState(Bundle)中去恢复UI数据。 那么问题来了，on">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://xch168.github.io/2018/12/01/java-transient/runResult.png">
-<meta property="og:image" content="https://xch168.github.io/2018/12/01/java-transient/static.png">
-<meta property="og:updated_time" content="2018-12-09T23:34:34.967Z">
+<meta property="og:updated_time" content="2020-09-20T09:18:36.974Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Java中的transient关键字">
-<meta name="twitter:description" content="概述 在Java中，一个类只要实现Serializable接口，这个类的对象就可以被序列化，这种序列化模式为开发者提供了很多便利，我们可以不必关心具体序列化的过程，只要这个类实现了Serializable接口，这个类的所有属性都会自动序列化。但是有时我们需要让类的某些属性不被序列化，如密码这类信息，为了安全起见，不希望在网络操作中被传输或者持久化到本地。只要在相应的属性前加上transient关键">
-<meta name="twitter:image" content="https://xch168.github.io/2018/12/01/java-transient/runResult.png">
+<meta name="twitter:title" content="重识onSaveInstanceState方法的调用时间">
+<meta name="twitter:description" content="概述 在Android的Activity中，我们使用onSaveInstanceState(Bundle outState)方法来保存当前界面的UI数据，防止在内存不够时，该Activity被系统销毁，用户重新回到该界面时界面没有数据，造成不好的用户体验。我们可以在onCreate(Bundle)或者onRestoreInstanceState(Bundle)中去恢复UI数据。 那么问题来了，on">
 
 <link rel="apple-touch-icon" href= "/apple-touch-icon.png">
 
@@ -66,7 +63,7 @@
 <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
 
 
-<title>Java中的transient关键字 | 辉天神龙</title>
+<title>重识onSaveInstanceState方法的调用时间 | 辉天神龙</title>
 
 <script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
 <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
@@ -292,11 +289,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap"><article id="post-java-transient" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-Understanding-onSaveInstanceState-call-times" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2018/12/01/java-transient/" class="article-date">
-      <time datetime="2018-11-30T16:28:17.000Z" itemprop="datePublished">2018-12-01</time>
+      <a href="/2020/09/19/Understanding-onSaveInstanceState-call-times/" class="article-date">
+      <time datetime="2020-09-19T14:37:22.000Z" itemprop="datePublished">2020-09-19</time>
 </a>
     </div>
   
@@ -309,7 +306,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      Java中的transient关键字
+      重识onSaveInstanceState方法的调用时间
     </h1>
   
 
@@ -320,7 +317,7 @@
 
         
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li></ul>
     </div>
 
         <div class="clearfix"></div>
@@ -331,22 +328,55 @@
       
           
         <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
-<p>在Java中，一个类只要实现Serializable接口，这个类的对象就可以被序列化，这种序列化模式为开发者提供了很多便利，我们可以不必关心具体序列化的过程，只要这个类实现了Serializable接口，这个类的所有属性都会自动序列化。但是有时我们需要让类的某些属性不被序列化，如密码这类信息，为了安全起见，不希望在网络操作中被传输或者持久化到本地。只要在相应的属性前加上<code>transient</code>关键字，就可以实现部分属性不被序列化，该属性的生命周期仅存于调用者的内存中而不会写入到磁盘持久化。</p>
+<p>在Android的Activity中，我们使用<code>onSaveInstanceState(Bundle outState)</code>方法来保存当前界面的UI数据，防止在内存不够时，该Activity被系统销毁，用户重新回到该界面时界面没有数据，造成不好的用户体验。我们可以在<code>onCreate(Bundle)</code>或者<code>onRestoreInstanceState(Bundle)</code>中去恢复UI数据。</p>
+<p>那么问题来了，<code>onSaveInstanceState(Bundle outState)</code>这个方法是在什么时候被调用？我们大部分人的第一印象是在内存不足，Activity被销毁前调用；第二印象是在手机转屏的时候调用。</p>
 </blockquote>
 <a id="more"></a>
-<h3 id="transient的使用"><a href="#transient的使用" class="headerlink" title="transient的使用"></a>transient的使用</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TransientTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setUsername(<span class="string">"Github"</span>);</span><br><span class="line">        user.setPassword(<span class="string">"123456"</span>);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"read before Serializable: "</span>);</span><br><span class="line">        System.out.println(<span class="string">"username: "</span> + user.getUsername());</span><br><span class="line">        System.err.println(<span class="string">"password: "</span> + user.getPassword());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ObjectOutputStream os = <span class="keyword">new</span> ObjectOutputStream(<span class="keyword">new</span> FileOutputStream(<span class="string">"user.txt"</span>));</span><br><span class="line">            os.writeObject(user); <span class="comment">// 将User对象写进文件</span></span><br><span class="line">            os.flush();</span><br><span class="line">            os.close();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ObjectInputStream is = <span class="keyword">new</span> ObjectInputStream(<span class="keyword">new</span> FileInputStream(<span class="string">"user.txt"</span>));</span><br><span class="line">            user = (User) is.readObject(); <span class="comment">// 从流中读取User的数据</span></span><br><span class="line">            is.close();</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"\nread after Serializable: "</span>);</span><br><span class="line">            System.out.println(<span class="string">"username: "</span> + user.getUsername());</span><br><span class="line">            System.err.println(<span class="string">"password: "</span> + user.getPassword());</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException | ClassNotFoundException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = <span class="number">1234567890L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> String password;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getUsername</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> username;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUsername</span><span class="params">(String username)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.username = username;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getPassword</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> password;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setPassword</span><span class="params">(String password)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.password = password;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><strong>运行结果</strong>：</p>
-<p><img src="/2018/12/01/java-transient/runResult.png" alt="runResult"></p>
-<h3 id="transient修饰静态变量"><a href="#transient修饰静态变量" class="headerlink" title="transient修饰静态变量"></a>transient修饰静态变量</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TransientTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setUsername(<span class="string">"Github"</span>);</span><br><span class="line">        user.setPassword(<span class="string">"123456"</span>);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"read before Serializable: "</span>);</span><br><span class="line">        System.out.println(<span class="string">"username: "</span> + user.getUsername());</span><br><span class="line">        System.err.println(<span class="string">"password: "</span> + user.getPassword());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ObjectOutputStream os = <span class="keyword">new</span> ObjectOutputStream(<span class="keyword">new</span> FileOutputStream(<span class="string">"user.txt"</span>));</span><br><span class="line">            os.writeObject(user); <span class="comment">// 将User对象写进文件</span></span><br><span class="line">            os.flush();</span><br><span class="line">            os.close();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 在反序列化前盖板username的值</span></span><br><span class="line">            user.setUsername(<span class="string">"Tom"</span>);</span><br><span class="line"></span><br><span class="line">            ObjectInputStream is = <span class="keyword">new</span> ObjectInputStream(<span class="keyword">new</span> FileInputStream(<span class="string">"user.txt"</span>));</span><br><span class="line">            user = (User) is.readObject(); <span class="comment">// 从流中读取User的数据</span></span><br><span class="line">            is.close();</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"\nread after Serializable: "</span>);</span><br><span class="line">            System.out.println(<span class="string">"username: "</span> + user.getUsername());</span><br><span class="line">            System.err.println(<span class="string">"password: "</span> + user.getPassword());</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException | ClassNotFoundException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = <span class="number">1234567890L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> String username;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> String password;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getUsername</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> username;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUsername</span><span class="params">(String username)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.username = username;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getPassword</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> password;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setPassword</span><span class="params">(String password)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.password = password;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><strong>运行结果</strong>：</p>
-<p><img src="/2018/12/01/java-transient/static.png" alt="static"></p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
-<li>一旦变量被transient修饰，变量将不再是对象持久化的一部分，该变量内容在序列化后无法获得访问。</li>
-<li>transient关键字只能修饰变量，而不能修饰方法和类。<strong>本地变量是不能被transient关键字修饰的。</strong>变量如果是用户自定义类变量，则该类需要实现Serializable接口。</li>
-<li>一个<strong>静态变量</strong>不管是否被transient修饰，均不能被序列化。</li>
+<h3 id="场景重现"><a href="#场景重现" class="headerlink" title="场景重现"></a>场景重现</h3><h4 id="Activity被系统销毁"><a href="#Activity被系统销毁" class="headerlink" title="Activity被系统销毁"></a>Activity被系统销毁</h4><blockquote>
+<p>为模拟Activity被系统销毁，可以在<code>开发者选项中--&gt;开启“不保留活动&quot;</code>。</p>
+</blockquote>
+<p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<h4 id="Activity转屏"><a href="#Activity转屏" class="headerlink" title="Activity转屏"></a>Activity转屏</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<h4 id="按Home键"><a href="#按Home键" class="headerlink" title="按Home键"></a>按Home键</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<h4 id="跳转其他Activity"><a href="#跳转其他Activity" class="headerlink" title="跳转其他Activity"></a>跳转其他Activity</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br></pre></td></tr></table></figure>
+<h4 id="按回退键"><a href="#按回退键" class="headerlink" title="按回退键"></a>按回退键</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<h4 id="主动调用finish"><a href="#主动调用finish" class="headerlink" title="主动调用finish()"></a>主动调用finish()</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><blockquote>
+<ol>
+<li><strong>如果用户<code>主动关闭Activity</code>（主动finish() 或按回退键），那么该方法不会调用；</strong></li>
+<li><strong>如果用户<code>离开Activity</code>（按Home键回到桌面或跳转到其他Activity）那么当Activity不可见的时候，就会调用<code>onSaveInstanceState(Bundle outState)</code>，来保存UI数据，因为当Activity不可见的时候，它的优先级最低，在系统内存不足时，最容易被系统销毁。</strong></li>
+<li><strong>为什么不等到内存不足再去调用？销毁一般都是在内存严重不足的时候，这时不太能给出足够的内存资源来让开发者做保存工作，所以选择在更早的时候，就是应用不可见的时候。</strong></li>
+<li><strong>如果该方法被调用，那么在<code>Android 9.0之后</code>，该方法会在<code>onStop()</code>方法之后调用；在<code>Android 9.0之前</code>，该方法在<code>onStop()</code>方法之前调用，但不能保证是在<code>onPause()</code>方法之前还是之后调用。</strong></li>
+<li><strong>如果<code>onRestoreInstanceState(Bundle)</code>方法被调用，那么是在<code>onStart()</code>之后，<code>onResume()</code>之前被调用。</strong></li>
 </ol>
+</blockquote>
 <h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
-<li><a href="http://www.cnblogs.com/lanxuezaipiao/p/3369962.html" target="_blank" rel="noopener">Java transient关键字使用小记</a></li>
+<li><a href="https://wx.zsxq.com/dweb2/index/group/51285415155554" target="_blank" rel="noopener">知识星球-扔物线</a></li>
+<li><a href="https://developer.android.com/reference/android/app/Activity" target="_blank" rel="noopener">Acitivity</a></li>
 </ol>
 
       
@@ -356,13 +386,13 @@
   
     
     <div class="copyright">
-        <p><span>本文标题:</span><a href="/2018/12/01/java-transient/">Java中的transient关键字</a></p>
+        <p><span>本文标题:</span><a href="/2020/09/19/Understanding-onSaveInstanceState-call-times/">重识onSaveInstanceState方法的调用时间</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">辉天神龙</a></p>
-        <p><span>发布时间:</span>2018-12-01, 00:28:17</p>
-        <p><span>最后更新:</span>2018-12-10, 07:34:34</p>
+        <p><span>发布时间:</span>2020-09-19, 22:37:22</p>
+        <p><span>最后更新:</span>2020-09-20, 17:18:36</p>
         <p>
-            <span>原始链接:</span><a class="post-url" href="/2018/12/01/java-transient/" title="Java中的transient关键字">https://xch168.github.io/2018/12/01/java-transient/</a>
-            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2018/12/01/java-transient/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2020/09/19/Understanding-onSaveInstanceState-call-times/" title="重识onSaveInstanceState方法的调用时间">https://xch168.github.io/2020/09/19/Understanding-onSaveInstanceState-call-times/</a>
+            <span class="copy-path" data-clipboard-text="原文: https://xch168.github.io/2020/09/19/Understanding-onSaveInstanceState-call-times/　　作者: 辉天神龙" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
@@ -374,16 +404,10 @@
 
     <nav id="article-nav">
         
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2018/12/10/use-checkstyle-for-better-code-style/">
-                    使用Checkstyle规范代码
-                </a>
-            </div>
-        
         
             <div id="article-nav-older" class="article-nav-title">
-                <a href="/2018/11/30/android-parcelable-serializable/">
-                    Android中的序列化：Parcelable和Serializable
+                <a href="/2019/10/16/speed-up-gradle-sync/">
+                    加快 Gradle 的同步速度
                 </a>
             </div>
         
@@ -394,7 +418,7 @@
 
     <div id="toc" class="toc-article">
     <strong class="toc-title">文章目录</strong>
-    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#transient的使用"><span class="toc-number">2.</span> <span class="toc-text">transient的使用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#transient修饰静态变量"><span class="toc-number">3.</span> <span class="toc-text">transient修饰静态变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">5.</span> <span class="toc-text">参考链接</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#场景重现"><span class="toc-number">2.</span> <span class="toc-text">场景重现</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Activity被系统销毁"><span class="toc-number">2.1.</span> <span class="toc-text">Activity被系统销毁</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Activity转屏"><span class="toc-number">2.2.</span> <span class="toc-text">Activity转屏</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#按Home键"><span class="toc-number">2.3.</span> <span class="toc-text">按Home键</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#跳转其他Activity"><span class="toc-number">2.4.</span> <span class="toc-text">跳转其他Activity</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#按回退键"><span class="toc-number">2.5.</span> <span class="toc-text">按回退键</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#主动调用finish"><span class="toc-number">2.6.</span> <span class="toc-text">主动调用finish()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考链接"><span class="toc-number">4.</span> <span class="toc-text">参考链接</span></a></li></ol>
 </div>
 <style>
     .left-col .switch-btn,
@@ -425,7 +449,7 @@
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"Java中的transient关键字　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"重识onSaveInstanceState方法的调用时间　| 辉天神龙　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -462,15 +486,13 @@
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2018/12/10/use-checkstyle-for-better-code-style/" title="上一篇: 使用Checkstyle规范代码">
-                <i class="fa fa-angle-left"></i>
-            </a>
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
         
 
         <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2018/11/30/android-parcelable-serializable/" title="下一篇: Android中的序列化：Parcelable和Serializable">
+            <a href="/2019/10/16/speed-up-gradle-sync/" title="下一篇: 加快 Gradle 的同步速度">
                 <i class="fa fa-angle-right"></i>
             </a>
         

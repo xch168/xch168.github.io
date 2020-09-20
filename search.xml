@@ -4,6 +4,71 @@
   
     
     <entry>
+      <title><![CDATA[重识onSaveInstanceState方法的调用时间]]></title>
+      <url>https://xch168.github.io/2020/09/19/Understanding-onSaveInstanceState-call-times/</url>
+      <content type="html"><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+<p>在Android的Activity中，我们使用<code>onSaveInstanceState(Bundle outState)</code>方法来保存当前界面的UI数据，防止在内存不够时，该Activity被系统销毁，用户重新回到该界面时界面没有数据，造成不好的用户体验。我们可以在<code>onCreate(Bundle)</code>或者<code>onRestoreInstanceState(Bundle)</code>中去恢复UI数据。</p>
+<p>那么问题来了，<code>onSaveInstanceState(Bundle outState)</code>这个方法是在什么时候被调用？我们大部分人的第一印象是在内存不足，Activity被销毁前调用；第二印象是在手机转屏的时候调用。</p>
+</blockquote>
+<a id="more"></a>
+<h3 id="场景重现"><a href="#场景重现" class="headerlink" title="场景重现"></a>场景重现</h3><h4 id="Activity被系统销毁"><a href="#Activity被系统销毁" class="headerlink" title="Activity被系统销毁"></a>Activity被系统销毁</h4><blockquote>
+<p>为模拟Activity被系统销毁，可以在<code>开发者选项中--&gt;开启“不保留活动&quot;</code>。</p>
+</blockquote>
+<p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<h4 id="Activity转屏"><a href="#Activity转屏" class="headerlink" title="Activity转屏"></a>Activity转屏</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onDestroy</span><br><span class="line">E/MainActivity: onCreate</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onRestoreInstanceState</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<h4 id="按Home键"><a href="#按Home键" class="headerlink" title="按Home键"></a>按Home键</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// 1.按Home键回到桌面</span><br><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">// 2.点击应用图标，重新进入应用</span><br><span class="line">E/MainActivity: onStart</span><br><span class="line">E/MainActivity: onResume</span><br></pre></td></tr></table></figure>
+<h4 id="跳转其他Activity"><a href="#跳转其他Activity" class="headerlink" title="跳转其他Activity"></a>跳转其他Activity</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br><span class="line">E/MainActivity: onStop</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onSaveInstanceState</span><br></pre></td></tr></table></figure>
+<h4 id="按回退键"><a href="#按回退键" class="headerlink" title="按回退键"></a>按回退键</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<h4 id="主动调用finish"><a href="#主动调用finish" class="headerlink" title="主动调用finish()"></a>主动调用finish()</h4><p>运行结果：</p>
+<p>Android 8.0(Oreo)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<p>Android 9.0(Pie)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E/MainActivity: onPause</span><br><span class="line">E/MainActivity: onStop</span><br><span class="line">E/MainActivity: onDestroy</span><br></pre></td></tr></table></figure>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><blockquote>
+<ol>
+<li><strong>如果用户<code>主动关闭Activity</code>（主动finish() 或按回退键），那么该方法不会调用；</strong></li>
+<li><strong>如果用户<code>离开Activity</code>（按Home键回到桌面或跳转到其他Activity）那么当Activity不可见的时候，就会调用<code>onSaveInstanceState(Bundle outState)</code>，来保存UI数据，因为当Activity不可见的时候，它的优先级最低，在系统内存不足时，最容易被系统销毁。</strong></li>
+<li><strong>为什么不等到内存不足再去调用？销毁一般都是在内存严重不足的时候，这时不太能给出足够的内存资源来让开发者做保存工作，所以选择在更早的时候，就是应用不可见的时候。</strong></li>
+<li><strong>如果该方法被调用，那么在<code>Android 9.0之后</code>，该方法会在<code>onStop()</code>方法之后调用；在<code>Android 9.0之前</code>，该方法在<code>onStop()</code>方法之前调用，但不能保证是在<code>onPause()</code>方法之前还是之后调用。</strong></li>
+<li><strong>如果<code>onRestoreInstanceState(Bundle)</code>方法被调用，那么是在<code>onStart()</code>之后，<code>onResume()</code>之前被调用。</strong></li>
+</ol>
+</blockquote>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
+<li><a href="https://wx.zsxq.com/dweb2/index/group/51285415155554" target="_blank" rel="noopener">知识星球-扔物线</a></li>
+<li><a href="https://developer.android.com/reference/android/app/Activity" target="_blank" rel="noopener">Acitivity</a></li>
+</ol>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Android </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[加快 Gradle 的同步速度]]></title>
       <url>https://xch168.github.io/2019/10/16/speed-up-gradle-sync/</url>
       <content type="html"><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
