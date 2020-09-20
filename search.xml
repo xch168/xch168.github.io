@@ -4,7 +4,7 @@
   
     
     <entry>
-      <title><![CDATA[重识onSaveInstanceState方法的调用时间]]></title>
+      <title><![CDATA[重识onSaveInstanceState方法的调用时机]]></title>
       <url>https://xch168.github.io/2020/09/19/Understanding-onSaveInstanceState-call-times/</url>
       <content type="html"><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
 <p>在Android的Activity中，我们使用<code>onSaveInstanceState(Bundle outState)</code>方法来保存当前界面的UI数据，防止在内存不够时，该Activity被系统销毁，用户重新回到该界面时界面没有数据，造成不好的用户体验。我们可以在<code>onCreate(Bundle)</code>或者<code>onRestoreInstanceState(Bundle)</code>中去恢复UI数据。</p>
