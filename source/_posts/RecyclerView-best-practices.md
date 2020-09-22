@@ -121,7 +121,7 @@ class OuterAdapter extends RecyclerView.Adapter<OuterAdapter.ViewHolder> {
     @Override
     public OuterAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
-        RecyclerView innerLLM = new RecyclerView(inflater.getContext());
+        RecyclerView innerRv = new RecyclerView(inflater.getContext());
 
         LinearLayoutManager innerLLM = new LinearLayoutManager(parent.getContext(), LinearLayoutManager.HORIZONTAL);
         innerLLM.setRecycleChildrenOnDetach(true);
