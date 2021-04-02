@@ -320,58 +320,10 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
+              <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><blockquote>
 <p><a target="_blank" rel="noopener" href="https://developer.android.com/reference/android/content/ContentProvider">ContentProvider</a> 是 Android 中，用于应用管理自身数据，和共享数据给其他应用的一个重要组件。通过它，可以是其他应用安全地访问和修改你的应用数据，这些也是 ContentProvider 设计的初衷。但是 ContentProvider 本身具有的一个特性，进来被挖掘出来，可以用来完成一些特殊的功能。</p>
 </blockquote>
-<h3 id="情景再现"><a href="#情景再现" class="headerlink" title="情景再现"></a>情景再现</h3><p>Step 1. 首先我们创建个 Demo，然后创建一个简单的 ContentProvider，</p>
-<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">InitContentProvider</span> : <span class="type">ContentProvider</span></span>() &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">onCreate</span><span class="params">()</span></span>: <span class="built_in">Boolean</span> &#123;</span><br><span class="line">        Log.i(<span class="string">&quot;Demo&quot;</span>, <span class="string">&quot;InitContentProvider#onCreate&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// ....</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Step 2. 在 <code>AndroidManifest.xml</code> 中注册 InitContentProvider</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">application</span>&gt;</span></span><br><span class="line">	// ....</span><br><span class="line">    </span><br><span class="line">    // 注册</span><br><span class="line">    &lt;provider</span><br><span class="line">        android:name=&quot;.InitContentProvider&quot;</span><br><span class="line">        android:authorities=&quot;$&#123;applicationId&#125;.InitContentProvider&quot;</span><br><span class="line">        android:enabled=&quot;true&quot;</span><br><span class="line">        android:exported=&quot;true&quot;/&gt;</span><br><span class="line"><span class="tag">&lt;/<span class="name">application</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>Step 3. 创建 Application 类</p>
-<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">App</span> : <span class="type">Application</span></span>() &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">attachBaseContext</span><span class="params">(base: <span class="type">Context</span>?)</span></span> &#123;</span><br><span class="line">        <span class="keyword">super</span>.attachBaseContext(base)</span><br><span class="line">        Log.i(<span class="string">&quot;Demo&quot;</span>, <span class="string">&quot;App#attachBaseContext&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">onCreate</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate()</span><br><span class="line">        Log.i(<span class="string">&quot;Demo&quot;</span>, <span class="string">&quot;App#onCreate&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Step 4. 在 <code>AndroidManifest.xml</code> 中配置 App</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;application</span><br><span class="line">    android:name=&quot;.App&quot;&gt;</span><br><span class="line">    </span><br><span class="line">    // ...</span><br><span class="line"><span class="tag">&lt;/<span class="name">application</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>Step 5. 运行 Demo</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">I/Demo: App#attachBaseContext</span><br><span class="line">I/Demo: InitContentProvider#onCreate</span><br><span class="line">I/Demo: App#onCreate</span><br></pre></td></tr></table></figure>
-
-<p>总结：</p>
-<blockquote>
-<p>从打印的日志，可以看出我们注册的 ContentProvider 在应用运行的时候，会自行调用其 <code>onCreate</code> 方法，</p>
-<p>并且其调用顺序是在 Application 的 <code>attachBaseContext</code> 之后，<code>onCreate</code> 之前。</p>
-</blockquote>
-<h3 id="ContentProvider-该特性的应用"><a href="#ContentProvider-该特性的应用" class="headerlink" title="ContentProvider 该特性的应用"></a>ContentProvider 该特性的应用</h3><h4 id="在-LeakCanary-中的应用"><a href="#在-LeakCanary-中的应用" class="headerlink" title="在 LeakCanary 中的应用"></a>在 LeakCanary 中的应用</h4><blockquote>
-<p>在 <a target="_blank" rel="noopener" href="https://github.com/square/leakcanary">LeakCanary</a> 2.5 版本后，就不需要在 Application 中去显式的初始化，只需要添加一行 gradle 依赖就可以。</p>
-<p>通过查看 LeakCanary 源码，发现其正是利用 ContentProvider 的自动初始化特性，来完成 LeakCanary 的初始化。</p>
-</blockquote>
-<p>AppWatcherInstaller :</p>
-<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">internal</span> <span class="keyword">sealed</span> <span class="class"><span class="keyword">class</span> <span class="title">AppWatcherInstaller</span> : <span class="type">ContentProvider</span></span>() &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ....</span></span><br><span class="line">    </span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">onCreate</span><span class="params">()</span></span>: <span class="built_in">Boolean</span> &#123;</span><br><span class="line">    <span class="keyword">val</span> application = context!!.applicationContext <span class="keyword">as</span> Application</span><br><span class="line">    <span class="comment">// 进行 LeakCanary 初始化</span></span><br><span class="line">    AppWatcher.manualInstall(application)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="在-App-Startup-中的应用"><a href="#在-App-Startup-中的应用" class="headerlink" title="在 App Startup 中的应用"></a>在 App Startup 中的应用</h4><blockquote>
-<p><a target="_blank" rel="noopener" href="https://developer.android.com/topic/libraries/app-startup">App Startup</a> 是 Jetpack 中，用来管理应用组件初始化的库。其原理，也是利用 ContentProvider 的自动初始化特性。</p>
-</blockquote>
-<p>InitializationProvider：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">InitializationProvider</span> <span class="keyword">extends</span> <span class="title">ContentProvider</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">onCreate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Context context = getContext();</span><br><span class="line">        <span class="keyword">if</span> (context != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="comment">// 去初始化组件</span></span><br><span class="line">            AppInitializer.getInstance(context).discoverAndInitialize();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> StartupException(<span class="string">&quot;Context cannot be null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><blockquote>
-<p>利用注册的 ContentProvider 在应用运行时，可以自行初始化的特性，我们可以将其用在库的初始化上，来简化库使用者的配置操作。</p>
-</blockquote>
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ol>
-<li><p><a target="_blank" rel="noopener" href="https://developer.android.com/guide/topics/providers/content-providers">Content providers</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://square.github.io/leakcanary/getting_started/">LeakCanary</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://developer.android.com/topic/libraries/app-startup">App Startup</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/28b015d781b4">App Startup真的能减少启动耗时吗？</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/Udg2uHgiu3oxN6fGqeTgAg">App Startup 可能比你想象中要简单</a></p>
-</li>
-</ol>
-
+          
       
     </div>
     
@@ -384,6 +336,10 @@
         <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/" rel="tag">Android</a></li></ul>
     </div>
 
+      
+        <p class="article-more-link">
+          <a href="/2021/04/02/special-uses-of-ContentProvider/#more">阅读全文 >></a>
+        </p>
       
       <div class="clearfix"></div>
     </div>
