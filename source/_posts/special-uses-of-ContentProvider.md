@@ -6,7 +6,7 @@ tags: [Android]
 
 ### 概述
 
-> [ContentProvider](https://developer.android.com/reference/android/content/ContentProvider) 是 Android 中，用于应用管理自身数据，和共享数据给其他应用的一个重要组件。通过它，可以是其他应用安全地访问和修改你的应用数据，这些也是 ContentProvider 设计的初衷。但是 ContentProvider 本身具有的一个特性，进来被挖掘出来，可以用来完成一些特殊的功能。
+> [ContentProvider](https://developer.android.com/reference/android/content/ContentProvider) 是 Android 中，用于应用管理自身数据，和共享数据给其他应用的一个重要组件。通过它，可以使其他应用安全地访问和修改你的应用数据，这些也是 ContentProvider 设计的初衷。但是 ContentProvider 本身具有的一个特性，进来被挖掘出来，可以用来完成一些特殊的功能。
 
 <!--more-->
 
